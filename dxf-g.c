@@ -1678,6 +1678,7 @@ process_circle_entities_code(int code)
     int coord, i;
     struct vertex *v0=NULL, *v1=NULL, *v2=NULL;
     struct edgeuse *eu;
+	vector<double> vcoord;
 
     switch (code) {
 	case 8:		/* layer name */
@@ -1691,6 +1692,7 @@ process_circle_entities_code(int code)
 	case 30:
 	    coord = code / 10 - 1;
 	    center[coord] = atof(line) * units_conv[units] * scale_factor;
+		vcoord.push_back(center[coord]);
 	    if (verbose) {
 		bu_log("CIRCLE center coord #%d = %g\n", coord, center[coord]);
 	    }
@@ -1706,62 +1708,64 @@ process_circle_entities_code(int code)
 	     * make a series of wire edges in the NMG to approximate a circle
 	     */
 
-	    get_layer();
-	    if (verbose) {
-		bu_log("Found a circle\n");
-	    }
+		DxfData.ProcessEntitiesCircle(vcoord.at(0), vcoord.at(1), vcoord.at(2), 
+						   			  radius, curr_state->state);
+	    // get_layer();
+	    // if (verbose) {
+		// bu_log("Found a circle\n");
+	    // }
 
-	    if (!layers[curr_layer]->m) {
-		create_nmg();
-	    }
+	    // if (!layers[curr_layer]->m) {
+		// create_nmg();
+	    // }
 
-	    layers[curr_layer]->circle_count++;
+	    // layers[curr_layer]->circle_count++;
 
-	    /* calculate circle at origin first */
-	    VSET(circle_pts[0], radius, 0.0, 0.0);
-	    for (i=1; i<segs_per_circle; i++) {
-		circle_pts[i][X] = circle_pts[i-1][X]*cos_delta - circle_pts[i-1][Y]*sin_delta;
-		circle_pts[i][Y] = circle_pts[i-1][Y]*cos_delta + circle_pts[i-1][X]*sin_delta;
-	    }
+	    // /* calculate circle at origin first */
+	    // VSET(circle_pts[0], radius, 0.0, 0.0);
+	    // for (i=1; i<segs_per_circle; i++) {
+		// circle_pts[i][X] = circle_pts[i-1][X]*cos_delta - circle_pts[i-1][Y]*sin_delta;
+		// circle_pts[i][Y] = circle_pts[i-1][Y]*cos_delta + circle_pts[i-1][X]*sin_delta;
+	    // }
 
-	    /* move everything to the specified center */
-	    for (i = 0; i < segs_per_circle; i++) {
-		point_t tmp_pt;
-		VADD2(circle_pts[i], circle_pts[i], center);
+	    // /* move everything to the specified center */
+	    // for (i = 0; i < segs_per_circle; i++) {
+		// point_t tmp_pt;
+		// VADD2(circle_pts[i], circle_pts[i], center);
 
-		/* apply transformation */
-		MAT4X3PNT(tmp_pt, curr_state->xform, circle_pts[i]);
-		VMOVE(circle_pts[i], tmp_pt);
-	    }
+		// /* apply transformation */
+		// MAT4X3PNT(tmp_pt, curr_state->xform, circle_pts[i]);
+		// VMOVE(circle_pts[i], tmp_pt);
+	    // }
 
-	    /* make nmg wire edges */
-	    for (i = 0; i < segs_per_circle; i++) {
-		if (i+1 == segs_per_circle) {
-		    v2 = v0;
-		}
-		eu = nmg_me(v1, v2, layers[curr_layer]->s);
-		if (i == 0) {
-		    v1 = eu->vu_p->v_p;
-		    v0 = v1;
-		    nmg_vertex_gv(v1, circle_pts[0]);
-		}
-		v2 = eu->eumate_p->vu_p->v_p;
-		if (i+1 < segs_per_circle) {
-		    nmg_vertex_gv(v2, circle_pts[i+1]);
-		}
-		if (verbose) {
-		    bu_log("Wire edge (circle): (%g %g %g) <-> (%g %g %g)\n",
-			   V3ARGS(v1->vg_p->coord),
-			   V3ARGS(v2->vg_p->coord));
-		}
-		v1 = v2;
-		v2 = NULL;
-	    }
+	    // /* make nmg wire edges */
+	    // for (i = 0; i < segs_per_circle; i++) {
+		// if (i+1 == segs_per_circle) {
+		//     v2 = v0;
+		// }
+		// eu = nmg_me(v1, v2, layers[curr_layer]->s);
+		// if (i == 0) {
+		//     v1 = eu->vu_p->v_p;
+		//     v0 = v1;
+		//     nmg_vertex_gv(v1, circle_pts[0]);
+		// }
+		// v2 = eu->eumate_p->vu_p->v_p;
+		// if (i+1 < segs_per_circle) {
+		//     nmg_vertex_gv(v2, circle_pts[i+1]);
+		// }
+		// if (verbose) {
+		//     bu_log("Wire edge (circle): (%g %g %g) <-> (%g %g %g)\n",
+		// 	   V3ARGS(v1->vg_p->coord),
+		// 	   V3ARGS(v2->vg_p->coord));
+		// }
+		// v1 = v2;
+		// v2 = NULL;
+	    // }
 
 	    curr_state->sub_state = UNKNOWN_ENTITY_STATE;
 	    process_entities_code[curr_state->sub_state](code);
 	    break;
-    }
+    }b
 
     return 0;
 }
