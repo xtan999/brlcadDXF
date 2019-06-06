@@ -25,24 +25,24 @@
 
 /* FIXME: most funcs should have 'const char*' instead of 'char *' in their args. */
 
-#include "common.h"
+// #include "common.h"
 
 /* system headers */
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
 #include <ctype.h>
-#include "bio.h"
+// #include "bio.h"
 
 /* interface headers */
-#include "bu/debug.h"
-#include "bu/getopt.h"
-#include "bu/list.h"
-#include "vmath.h"
-#include "bn.h"
-#include "nmg.h"
-#include "raytrace.h"
-#include "wdb.h"
+// #include "bu/debug.h"
+// #include "bu/getopt.h"
+// #include "bu/list.h"
+// #include "vmath.h"
+// #include "bn.h"
+// #include "nmg.h"
+// #include "raytrace.h"
+// #include "wdb.h"
 
 /* private headers */
 #include "./dxf.h"
@@ -51,21 +51,21 @@
 static int overstrikemode = 0;
 static int underscoremode = 0;
 
-struct insert_data {
-    fastf_t scale[3];
-    fastf_t rotation;
-    point_t insert_pt;
-    vect_t extrude_dir;
-};
+// struct insert_data {
+//     fastf_t scale[3];
+//     fastf_t rotation;
+//     point_t insert_pt;
+//     vect_t extrude_dir;
+// };
 
 
 struct state_data {
-    struct bu_list l;
+    // struct bu_list l;
     struct block_list *curr_block;
-    off_t file_offset;
+    // off_t file_offset;
     int state;
     int sub_state;
-    mat_t xform;
+    // mat_t xform;
 };
 
 
@@ -98,18 +98,18 @@ struct layer {
     size_t leader_count;
     size_t face3d_count;
     size_t point_count;
-    struct bu_ptbl solids;
+    // struct bu_ptbl solids;
     struct model *m;
     struct shell *s;
 };
 
 
 struct block_list {
-    struct bu_list l;
+    // struct bu_list l;
     char *block_name;
-    off_t offset;
+    // off_t offset;
     char handle[17];
-    point_t base;
+    // point_t base;
 };
 
 
@@ -186,7 +186,7 @@ static int polyline_flag = 0;
 #define LAYER_TABLE_STATE	1
 #define NUM_TABLE_STATES	2
 
-static fastf_t *polyline_verts=NULL;
+// static fastf_t *polyline_verts=NULL;
 static int polyline_vertex_count = 0;
 static int polyline_vertex_max = 0;
 static int mesh_m_count = 0;
@@ -197,7 +197,7 @@ static int polyline_vert_indices_max = 0;
 #define PVINDEX(_i, _j)	((_i)*mesh_n_count + (_j))
 #define POLYLINE_VERTEX_BLOCK	10
 
-static point_t pts[4];
+// static point_t pts[4];
 
 #define UNKNOWN_ENTITY 0
 #define POLYLINE_VERTEX 1
@@ -213,21 +213,21 @@ char line[MAX_LINE_SIZE];
 
 static char *usage="Usage: dxf-g [-c] [-d] [-v] [-t tolerance] [-s scale_factor] input_file.dxf output_file.g\n";
 
-static FILE *dxf;
+// static FILE *dxf;
 static struct rt_wdb *out_fp;
 static char *output_file;
 static char *dxf_file;
 static int verbose = 0;
-static fastf_t tol = 0.01;
-static fastf_t tol_sq;
+// static fastf_t tol = 0.01;
+// static fastf_t tol_sq;
 static char *base_name;
 static char tmp_name[256];
 static int segs_per_circle=32;
 static int splineSegs=16;
-static fastf_t sin_delta, cos_delta;
-static fastf_t delta_angle;
-static point_t *circle_pts;
-static fastf_t scale_factor;
+// static fastf_t sin_delta, cos_delta;
+// static fastf_t delta_angle;
+// static point_t *circle_pts;
+// static fastf_t scale_factor;
 static struct bu_list free_hd;
 
 #define TRI_BLOCK 512			/* number of triangles to malloc per call */
@@ -238,29 +238,29 @@ static int (*process_tables_sub_code[NUM_TABLE_STATES])(int code);
 
 static int *int_ptr=NULL;
 static int units = 0;
-static fastf_t units_conv[]={
-    /* 0 */	1.0,
-    /* 1 */	25.4,
-    /* 2 */	304.8,
-    /* 3 */	1609344.0,
-    /* 4 */	1.0,
-    /* 5 */	10.0,
-    /* 6 */	1000.0,
-    /* 7 */	1000000.0,
-    /* 8 */	0.0000254,
-    /* 9 */	0.0254,
-    /* 10 */ 914.4,
-    /* 11 */ 1.0e-7,
-    /* 12 */ 1.0e-6,
-    /* 13 */ 1.0e-3,
-    /* 14 */ 100.0,
-    /* 15 */ 10000.0,
-    /* 16 */ 100000.0,
-    /* 17 */ 1.0e+12,
-    /* 18 */ 1.495979e+14,
-    /* 19 */ 9.460730e+18,
-    /* 20 */ 3.085678e+19
-};
+// static fastf_t units_conv[]={
+//     /* 0 */	1.0,
+//     /* 1 */	25.4,
+//     /* 2 */	304.8,
+//     /* 3 */	1609344.0,
+//     /* 4 */	1.0,
+//     /* 5 */	10.0,
+//     /* 6 */	1000.0,
+//     /* 7 */	1000000.0,
+//     /* 8 */	0.0000254,
+//     /* 9 */	0.0254,
+//     /* 10 */ 914.4,
+//     /* 11 */ 1.0e-7,
+//     /* 12 */ 1.0e-6,
+//     /* 13 */ 1.0e-3,
+//     /* 14 */ 100.0,
+//     /* 15 */ 10000.0,
+//     /* 16 */ 100000.0,
+//     /* 17 */ 1.0e+12,
+//     /* 18 */ 1.495979e+14,
+//     /* 19 */ 9.460730e+18,
+//     /* 20 */ 3.085678e+19
+// };
 
 
 static char *
@@ -269,7 +269,7 @@ make_brlcad_name(const char *nameline)
     char *name;
     char *c;
 
-    name = bu_strdup(nameline);
+    // name = bu_strdup(nameline);
 
     c = name;
     while (*c != '\0') {
@@ -289,19 +289,20 @@ get_layer()
     int i;
     int old_layer=curr_layer;
 
-    if (verbose) {
-	bu_log("get_layer(): state = %d, substate = %d\n", curr_state->state, curr_state->sub_state);
-    }
+    // if (verbose) {
+	// bu_log("get_layer(): state = %d, substate = %d\n", curr_state->state, curr_state->sub_state);
+    // }
+
     /* do we already have a layer by this name and color */
     curr_layer = -1;
     for (i = 1; i < next_layer; i++) {
 	if (!color_by_layer && !ignore_colors && curr_color != 256) {
-	    if (layers[i]->color_number == curr_color && BU_STR_EQUAL(curr_layer_name, layers[i]->name)) {
+	    if (layers[i]->color_number == curr_color && layers[i]->name == curr_layer_name) {
 		curr_layer = i;
 		break;
 	    }
 	} else {
-	    if (BU_STR_EQUAL(curr_layer_name, layers[i]->name)) {
+	    if (layers[i]->name == curr_layer_name) {
 		curr_layer = i;
 		break;
 	    }
@@ -311,20 +312,21 @@ get_layer()
     if (curr_layer == -1) {
 	/* add a new layer */
 	if (next_layer >= max_layers) {
-	    if (verbose) {
-		bu_log("Creating new block of layers\n");
-	    }
+	    // if (verbose) {
+		// bu_log("Creating new block of layers\n");
+	    // }
 	    max_layers += 5;
-	    layers = (struct layer **)bu_realloc(layers, max_layers*sizeof(struct layer *), "layers");
-	    for (i = 0; i < 5; i++) {
-		BU_ALLOC(layers[max_layers-i-1], struct layer);
-	    }
+	    // layers = (struct layer **)bu_realloc(layers, max_layers*sizeof(struct layer *), "layers");
+	    // for (i = 0; i < 5; i++) {
+		// BU_ALLOC(layers[max_layers-i-1], struct layer);
+	    // }
 	}
 	curr_layer = next_layer++;
-	if (verbose) {
-	    bu_log("New layer: %s, color number: %d", line, curr_color);
-	}
-	layers[curr_layer]->name = bu_strdup(curr_layer_name);
+	// if (verbose) {
+	//     bu_log("New layer: %s, color number: %d", line, curr_color);
+	// }
+	// layers[curr_layer]->name = bu_strdup(curr_layer_name);
+	layers[curr_layer]->name = curr_layer_name;
 	if (curr_state->state == ENTITIES_SECTION &&
 	    (curr_state->sub_state == POLYLINE_ENTITY_STATE ||
 	     curr_state->sub_state == POLYLINE_VERTEX_ENTITY_STATE)) {
@@ -333,51 +335,51 @@ get_layer()
 	    layers[curr_layer]->vert_tree = bn_vert_tree_create();
 	}
 	layers[curr_layer]->color_number = curr_color;
-	bu_ptbl_init(&layers[curr_layer]->solids, 8, "layers[curr_layer]->solids");
-	if (verbose) {
-	    bu_log("\tNew layer name: %s\n", layers[curr_layer]->name);
-	}
+	// bu_ptbl_init(&layers[curr_layer]->solids, 8, "layers[curr_layer]->solids");
+	// if (verbose) {
+	//     bu_log("\tNew layer name: %s\n", layers[curr_layer]->name);
+	// }
     }
 
-    if (verbose && curr_layer != old_layer) {
-	bu_log("changed to layer #%d, (m = %p, s=%p)\n",
-	       curr_layer,
-	       (void *)layers[curr_layer]->m,
-	       (void *)layers[curr_layer]->s);
-    }
+    // if (verbose && curr_layer != old_layer) {
+	// bu_log("changed to layer #%d, (m = %p, s=%p)\n",
+	//        curr_layer,
+	//        (void *)layers[curr_layer]->m,
+	//        (void *)layers[curr_layer]->s);
+    // }
 }
 
 
-static void
-create_nmg()
-{
-    struct model *m;
-    struct nmgregion *r;
+// static void
+// create_nmg()
+// {
+//     struct model *m;
+//     struct nmgregion *r;
 
-    m = nmg_mm();
-    r = nmg_mrsv(m);
-    layers[curr_layer]->s = BU_LIST_FIRST(shell, &r->s_hd);
-    layers[curr_layer]->m = m;
-}
+//     m = nmg_mm();
+//     r = nmg_mrsv(m);
+//     layers[curr_layer]->s = BU_LIST_FIRST(shell, &r->s_hd);
+//     layers[curr_layer]->m = m;
+// }
 
 
 /* routine to add a new triangle to the current part */
 void
 add_triangle(int v1, int v2, int v3, int layer)
 {
-    if (verbose) {
-	bu_log("Adding triangle %d %d %d, to layer %s\n", v1, v2, v3, layers[layer]->name);
-    }
+    // if (verbose) {
+	// bu_log("Adding triangle %d %d %d, to layer %s\n", v1, v2, v3, layers[layer]->name);
+    // }
     if (v1 == v2 || v2 == v3 || v3 == v1) {
-	if (verbose) {
-	    bu_log("\tSkipping degenerate triangle\n");
-	}
+	// if (verbose) {
+	//     bu_log("\tSkipping degenerate triangle\n");
+	// }
 	return;
     }
     if (layers[layer]->curr_tri >= layers[layer]->max_tri) {
 	/* allocate more memory for triangles */
 	layers[layer]->max_tri += TRI_BLOCK;
-	layers[layer]->part_tris = (int *)bu_realloc(layers[layer]->part_tris, sizeof(int) * layers[layer]->max_tri * 3, "layers[layer]->part_tris");
+	// layers[layer]->part_tris = (int *)bu_realloc(layers[layer]->part_tris, sizeof(int) * layers[layer]->max_tri * 3, "layers[layer]->part_tris");
     }
 
     /* fill in triangle info */
@@ -395,61 +397,61 @@ process_unknown_code(int code)
 {
     switch (code) {
 	case 999:	/* comment */
-	    printf("%s\n", line);
+	    // printf("%s\n", line);
 	    break;
 	case 0:		/* text string */
-	    if (!bu_strncmp(line, "SECTION", 7)) {
-		curr_state->state = UNKNOWN_SECTION;
-		break;
-	    } else if (!bu_strncmp(line, "ENDSEC", 6)) {
-		curr_state->state = UNKNOWN_SECTION;
-		break;
-	    }
+	    // if (!bu_strncmp(line, "SECTION", 7)) {
+		// curr_state->state = UNKNOWN_SECTION;
+		// break;
+	    // } else if (!bu_strncmp(line, "ENDSEC", 6)) {
+		// curr_state->state = UNKNOWN_SECTION;
+		// break;
+	    // }
 	    break;
 	case 2:		/* name */
 	    if (!bu_strncmp(line, "HEADER", 6)) {
-		curr_state->state = HEADER_SECTION;
-		if (verbose) {
-		    bu_log("Change state to %d\n", curr_state->state);
-		}
+		// curr_state->state = HEADER_SECTION;
+		// if (verbose) {
+		//     bu_log("Change state to %d\n", curr_state->state);
+		// }
 		break;
 	    } else if (!bu_strncmp(line, "CLASSES", 7)) {
 		curr_state->state = CLASSES_SECTION;
-		if (verbose) {
-		    bu_log("Change state to %d\n", curr_state->state);
-		}
+		// if (verbose) {
+		//     bu_log("Change state to %d\n", curr_state->state);
+		// }
 		break;
 	    } else if (!bu_strncmp(line, "TABLES", 6)) {
 		curr_state->state = TABLES_SECTION;
 		curr_state->sub_state = UNKNOWN_TABLE_STATE;
-		if (verbose) {
-		    bu_log("Change state to %d\n", curr_state->state);
-		}
+		// if (verbose) {
+		//     bu_log("Change state to %d\n", curr_state->state);
+		// }
 		break;
 	    } else if (!bu_strncmp(line, "BLOCKS", 6)) {
 		curr_state->state = BLOCKS_SECTION;
-		if (verbose) {
-		    bu_log("Change state to %d\n", curr_state->state);
-		}
+		// if (verbose) {
+		//     bu_log("Change state to %d\n", curr_state->state);
+		// }
 		break;
 	    } else if (!bu_strncmp(line, "ENTITIES", 8)) {
 		curr_state->state = ENTITIES_SECTION;
 		curr_state->sub_state =UNKNOWN_ENTITY_STATE;
-		if (verbose) {
-		    bu_log("Change state to %d\n", curr_state->state);
-		}
+		// if (verbose) {
+		//     bu_log("Change state to %d\n", curr_state->state);
+		// }
 		break;
 	    } else if (!bu_strncmp(line, "OBJECTS", 7)) {
 		curr_state->state = OBJECTS_SECTION;
-		if (verbose) {
-		    bu_log("Change state to %d\n", curr_state->state);
-		}
+		// if (verbose) {
+		//     bu_log("Change state to %d\n", curr_state->state);
+		// }
 		break;
 	    } else if (!bu_strncmp(line, "THUMBNAILIMAGE", 14)) {
 		curr_state->state = THUMBNAILIMAGE_SECTION;
-		if (verbose) {
-		    bu_log("Change state to %d\n", curr_state->state);
-		}
+		// if (verbose) {
+		//     bu_log("Change state to %d\n", curr_state->state);
+		// }
 		break;
 	    }
 	    break;
@@ -628,9 +630,10 @@ process_blocks_code(int code)
 		break;
 	    } else if (!bu_strncmp(line, "BLOCK", 5)) {
 		/* start of a new block */
-		BU_ALLOC(curr_block, struct block_list);
-		curr_block->offset = bu_ftell(dxf);
-		BU_LIST_INSERT(&(block_head), &(curr_block->l));
+
+		// BU_ALLOC(curr_block, struct block_list);
+		// curr_block->offset = bu_ftell(dxf);
+		// BU_LIST_INSERT(&(block_head), &(curr_block->l));
 		break;
 	    }
 	    break;
@@ -638,9 +641,9 @@ process_blocks_code(int code)
 	    if (curr_block && curr_block->block_name == NULL) {
 		curr_block->block_name = bu_strdup(line);
 		if (verbose) {
-		    bu_log("BLOCK %s begins at %jd\n",
-			   curr_block->block_name,
-			   (intmax_t)curr_block->offset);
+		    // bu_log("BLOCK %s begins at %jd\n",
+			//    curr_block->block_name,
+			//    (intmax_t)curr_block->offset);
 		}
 	    }
 	    break;
@@ -1707,7 +1710,7 @@ process_circle_entities_code(int code)
 	    /* end of this circle entity
 	     * make a series of wire edges in the NMG to approximate a circle
 	     */
-		
+
 	    get_layer();
 	    if (verbose) {
 		bu_log("Found a circle\n");
