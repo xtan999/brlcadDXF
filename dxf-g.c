@@ -35,9 +35,9 @@
 // #include "bio.h"
 
 /* interface headers */
-// #include "bu/debug.h"
-// #include "bu/getopt.h"
-// #include "bu/list.h"
+#include "bu/debug.h"
+#include "bu/getopt.h"
+#include "bu/list.h"
 // #include "vmath.h"
 // #include "bn.h"
 // #include "nmg.h"
@@ -51,21 +51,21 @@
 static int overstrikemode = 0;
 static int underscoremode = 0;
 
-// struct insert_data {
-//     fastf_t scale[3];
-//     fastf_t rotation;
-//     point_t insert_pt;
-//     vect_t extrude_dir;
-// };
+struct insert_data {
+    fastf_t scale[3];
+    fastf_t rotation;
+    point_t insert_pt;
+    vect_t extrude_dir;
+};
 
 
 struct state_data {
-    // struct bu_list l;
+    struct bu_list l;
     struct block_list *curr_block;
-    // off_t file_offset;
+    off_t file_offset;
     int state;
     int sub_state;
-    // mat_t xform;
+    mat_t xform;
 };
 
 
@@ -98,18 +98,18 @@ struct layer {
     size_t leader_count;
     size_t face3d_count;
     size_t point_count;
-    // struct bu_ptbl solids;
+    struct bu_ptbl solids;
     struct model *m;
     struct shell *s;
 };
 
 
 struct block_list {
-    // struct bu_list l;
+    struct bu_list l;
     char *block_name;
-    // off_t offset;
+    off_t offset;
     char handle[17];
-    // point_t base;
+    point_t base;
 };
 
 
@@ -197,7 +197,7 @@ static int polyline_vert_indices_max = 0;
 #define PVINDEX(_i, _j)	((_i)*mesh_n_count + (_j))
 #define POLYLINE_VERTEX_BLOCK	10
 
-// static point_t pts[4];
+static point_t pts[4];
 
 #define UNKNOWN_ENTITY 0
 #define POLYLINE_VERTEX 1
@@ -218,16 +218,16 @@ static struct rt_wdb *out_fp;
 static char *output_file;
 static char *dxf_file;
 static int verbose = 0;
-// static fastf_t tol = 0.01;
-// static fastf_t tol_sq;
+static fastf_t tol = 0.01;
+static fastf_t tol_sq;
 static char *base_name;
 static char tmp_name[256];
 static int segs_per_circle=32;
 static int splineSegs=16;
-// static fastf_t sin_delta, cos_delta;
-// static fastf_t delta_angle;
-// static point_t *circle_pts;
-// static fastf_t scale_factor;
+static fastf_t sin_delta, cos_delta;
+static fastf_t delta_angle;
+static point_t *circle_pts;
+static fastf_t scale_factor;
 static struct bu_list free_hd;
 
 #define TRI_BLOCK 512			/* number of triangles to malloc per call */
@@ -238,29 +238,29 @@ static int (*process_tables_sub_code[NUM_TABLE_STATES])(int code);
 
 static int *int_ptr=NULL;
 static int units = 0;
-// static fastf_t units_conv[]={
-//     /* 0 */	1.0,
-//     /* 1 */	25.4,
-//     /* 2 */	304.8,
-//     /* 3 */	1609344.0,
-//     /* 4 */	1.0,
-//     /* 5 */	10.0,
-//     /* 6 */	1000.0,
-//     /* 7 */	1000000.0,
-//     /* 8 */	0.0000254,
-//     /* 9 */	0.0254,
-//     /* 10 */ 914.4,
-//     /* 11 */ 1.0e-7,
-//     /* 12 */ 1.0e-6,
-//     /* 13 */ 1.0e-3,
-//     /* 14 */ 100.0,
-//     /* 15 */ 10000.0,
-//     /* 16 */ 100000.0,
-//     /* 17 */ 1.0e+12,
-//     /* 18 */ 1.495979e+14,
-//     /* 19 */ 9.460730e+18,
-//     /* 20 */ 3.085678e+19
-// };
+static fastf_t units_conv[]={
+    /* 0 */	1.0,
+    /* 1 */	25.4,
+    /* 2 */	304.8,
+    /* 3 */	1609344.0,
+    /* 4 */	1.0,
+    /* 5 */	10.0,
+    /* 6 */	1000.0,
+    /* 7 */	1000000.0,
+    /* 8 */	0.0000254,
+    /* 9 */	0.0254,
+    /* 10 */ 914.4,
+    /* 11 */ 1.0e-7,
+    /* 12 */ 1.0e-6,
+    /* 13 */ 1.0e-3,
+    /* 14 */ 100.0,
+    /* 15 */ 10000.0,
+    /* 16 */ 100000.0,
+    /* 17 */ 1.0e+12,
+    /* 18 */ 1.495979e+14,
+    /* 19 */ 9.460730e+18,
+    /* 20 */ 3.085678e+19
+};
 
 
 static char *
@@ -269,7 +269,7 @@ make_brlcad_name(const char *nameline)
     char *name;
     char *c;
 
-    // name = bu_strdup(nameline);
+    name = bu_strdup(nameline);
 
     c = name;
     while (*c != '\0') {
@@ -325,7 +325,7 @@ get_layer()
 	// if (verbose) {
 	//     bu_log("New layer: %s, color number: %d", line, curr_color);
 	// }
-	// layers[curr_layer]->name = bu_strdup(curr_layer_name);
+	layers[curr_layer]->name = bu_strdup(curr_layer_name);
 	layers[curr_layer]->name = curr_layer_name;
 	if (curr_state->state == ENTITIES_SECTION &&
 	    (curr_state->sub_state == POLYLINE_ENTITY_STATE ||
@@ -400,17 +400,17 @@ process_unknown_code(int code)
 	    // printf("%s\n", line);
 	    break;
 	case 0:		/* text string */
-	    // if (!bu_strncmp(line, "SECTION", 7)) {
-		// curr_state->state = UNKNOWN_SECTION;
-		// break;
-	    // } else if (!bu_strncmp(line, "ENDSEC", 6)) {
-		// curr_state->state = UNKNOWN_SECTION;
-		// break;
-	    // }
+	    if (!bu_strncmp(line, "SECTION", 7)) {
+		curr_state->state = UNKNOWN_SECTION;
+		break;
+	    } else if (!bu_strncmp(line, "ENDSEC", 6)) {
+		curr_state->state = UNKNOWN_SECTION;
+		break;
+	    }
 	    break;
 	case 2:		/* name */
 	    if (!bu_strncmp(line, "HEADER", 6)) {
-		// curr_state->state = HEADER_SECTION;
+		curr_state->state = HEADER_SECTION;
 		// if (verbose) {
 		//     bu_log("Change state to %d\n", curr_state->state);
 		// }
@@ -573,15 +573,15 @@ process_tables_layer_code(int code)
 		bu_free(curr_layer_name, "curr_layer_name");
 	    }
 	    curr_layer_name = make_brlcad_name(line);
-	    if (verbose) {
-		bu_log("In LAYER in TABLES, layer name = %s\n", curr_layer_name);
-	    }
+	    // if (verbose) {
+		// bu_log("In LAYER in TABLES, layer name = %s\n", curr_layer_name);
+	    // }
 	    break;
 	case 62:	/* layer color */
 	    curr_color = atoi(line);
-	    if (verbose) {
-		bu_log("In LAYER in TABLES, layer color = %d\n", curr_color);
-	    }
+	    // if (verbose) {
+		// bu_log("In LAYER in TABLES, layer color = %d\n", curr_color);
+	    // }
 	    break;
 	case 0:		/* text string */
 	    if (curr_layer_name && curr_color) {
@@ -631,9 +631,9 @@ process_blocks_code(int code)
 	    } else if (!bu_strncmp(line, "BLOCK", 5)) {
 		/* start of a new block */
 
-		// BU_ALLOC(curr_block, struct block_list);
-		// curr_block->offset = bu_ftell(dxf);
-		// BU_LIST_INSERT(&(block_head), &(curr_block->l));
+		BU_ALLOC(curr_block, struct block_list);
+		curr_block->offset = bu_ftell(dxf);
+		BU_LIST_INSERT(&(block_head), &(curr_block->l));
 		break;
 	    }
 	    break;
@@ -683,9 +683,9 @@ add_polyline_vertex(fastf_t x, fastf_t y, fastf_t z)
     VSET(&polyline_verts[polyline_vertex_count*3], x, y, z);
     polyline_vertex_count++;
 
-    if (verbose) {
-	bu_log("Added polyline vertex (%g %g %g) #%d\n", x, y, z, polyline_vertex_count);
-    }
+    // if (verbose) {
+	// bu_log("Added polyline vertex (%g %g %g) #%d\n", x, y, z, polyline_vertex_count);
+    // }
 }
 
 
@@ -715,10 +715,10 @@ process_point_entities_code(int code)
 	case 0:
 	    get_layer();
 	    layers[curr_layer]->point_count++;
-	    MAT4X3PNT(tmp_pt, curr_state->xform, pt);
-	    sprintf(tmp_name, "point.%lu", (long unsigned int)layers[curr_layer]->point_count);
-	    (void)mk_sph(out_fp, tmp_name, tmp_pt, 0.1);
-	    (void)bu_ptbl_ins(&(layers[curr_layer]->solids), (long *)bu_strdup(tmp_name));
+	    // MAT4X3PNT(tmp_pt, curr_state->xform, pt);
+	    // sprintf(tmp_name, "point.%lu", (long unsigned int)layers[curr_layer]->point_count);
+	    // (void)mk_sph(out_fp, tmp_name, tmp_pt, 0.1);
+	    // (void)bu_ptbl_ins(&(layers[curr_layer]->solids), (long *)bu_strdup(tmp_name));
 	    curr_state->sub_state = UNKNOWN_ENTITY_STATE;
 	    process_entities_code[curr_state->sub_state](code);
 	    break;
