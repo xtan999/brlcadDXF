@@ -35,9 +35,9 @@
 // #include "bio.h"
 
 /* interface headers */
-#include "bu/debug.h"
-#include "bu/getopt.h"
-#include "bu/list.h"
+// #include "bu/debug.h"
+// #include "bu/getopt.h"
+// #include "bu/list.h"
 // #include "vmath.h"
 // #include "bn.h"
 // #include "nmg.h"
@@ -52,15 +52,15 @@ static int overstrikemode = 0;
 static int underscoremode = 0;
 
 struct insert_data {
-    fastf_t scale[3];
-    fastf_t rotation;
+    double scale[3];
+    double rotation;
     point_t insert_pt;
     vect_t extrude_dir;
 };
 
 
 struct state_data {
-    struct bu_list l;
+    struct list l;
     struct block_list *curr_block;
     off_t file_offset;
     int state;
@@ -69,7 +69,7 @@ struct state_data {
 };
 
 
-static struct bu_list state_stack;
+static struct list state_stack;
 static struct state_data *curr_state;
 static int curr_color=7;
 static int ignore_colors = 0;
@@ -105,7 +105,7 @@ struct layer {
 
 
 struct block_list {
-    struct bu_list l;
+    struct list l;
     char *block_name;
     off_t offset;
     char handle[17];
@@ -113,7 +113,7 @@ struct block_list {
 };
 
 
-static struct bu_list block_head;
+static struct list block_head;
 static struct block_list *curr_block=NULL;
 
 static struct layer **layers=NULL;
@@ -186,7 +186,7 @@ static int polyline_flag = 0;
 #define LAYER_TABLE_STATE	1
 #define NUM_TABLE_STATES	2
 
-// static fastf_t *polyline_verts=NULL;
+// static double *polyline_verts=NULL;
 static int polyline_vertex_count = 0;
 static int polyline_vertex_max = 0;
 static int mesh_m_count = 0;
@@ -218,17 +218,17 @@ static struct rt_wdb *out_fp;
 static char *output_file;
 static char *dxf_file;
 static int verbose = 0;
-static fastf_t tol = 0.01;
-static fastf_t tol_sq;
+static double tol = 0.01;
+static double tol_sq;
 static char *base_name;
 static char tmp_name[256];
 static int segs_per_circle=32;
 static int splineSegs=16;
-static fastf_t sin_delta, cos_delta;
-static fastf_t delta_angle;
+static double sin_delta, cos_delta;
+static double delta_angle;
 static point_t *circle_pts;
-static fastf_t scale_factor;
-static struct bu_list free_hd;
+static double scale_factor;
+static struct list free_hd;
 
 #define TRI_BLOCK 512			/* number of triangles to malloc per call */
 
@@ -238,7 +238,7 @@ static int (*process_tables_sub_code[NUM_TABLE_STATES])(int code);
 
 static int *int_ptr=NULL;
 static int units = 0;
-static fastf_t units_conv[]={
+static double units_conv[]={
     /* 0 */	1.0,
     /* 1 */	25.4,
     /* 2 */	304.8,
@@ -358,7 +358,7 @@ get_layer()
 
 //     m = nmg_mm();
 //     r = nmg_mrsv(m);
-//     layers[curr_layer]->s = BU_LIST_FIRST(shell, &r->s_hd);
+//     layers[curr_layer]->s = list_FIRST(shell, &r->s_hd);
 //     layers[curr_layer]->m = m;
 // }
 
@@ -400,54 +400,54 @@ process_unknown_code(int code)
 	    // printf("%s\n", line);
 	    break;
 	case 0:		/* text string */
-	    if (!bu_strncmp(line, "SECTION", 7)) {
+	    if (!strncmp(line, "SECTION", 7)) {
 		curr_state->state = UNKNOWN_SECTION;
 		break;
-	    } else if (!bu_strncmp(line, "ENDSEC", 6)) {
+	    } else if (!strncmp(line, "ENDSEC", 6)) {
 		curr_state->state = UNKNOWN_SECTION;
 		break;
 	    }
 	    break;
 	case 2:		/* name */
-	    if (!bu_strncmp(line, "HEADER", 6)) {
+	    if (!strncmp(line, "HEADER", 6)) {
 		curr_state->state = HEADER_SECTION;
 		// if (verbose) {
 		//     bu_log("Change state to %d\n", curr_state->state);
 		// }
 		break;
-	    } else if (!bu_strncmp(line, "CLASSES", 7)) {
+	    } else if (!strncmp(line, "CLASSES", 7)) {
 		curr_state->state = CLASSES_SECTION;
 		// if (verbose) {
 		//     bu_log("Change state to %d\n", curr_state->state);
 		// }
 		break;
-	    } else if (!bu_strncmp(line, "TABLES", 6)) {
+	    } else if (!strncmp(line, "TABLES", 6)) {
 		curr_state->state = TABLES_SECTION;
 		curr_state->sub_state = UNKNOWN_TABLE_STATE;
 		// if (verbose) {
 		//     bu_log("Change state to %d\n", curr_state->state);
 		// }
 		break;
-	    } else if (!bu_strncmp(line, "BLOCKS", 6)) {
+	    } else if (!strncmp(line, "BLOCKS", 6)) {
 		curr_state->state = BLOCKS_SECTION;
 		// if (verbose) {
 		//     bu_log("Change state to %d\n", curr_state->state);
 		// }
 		break;
-	    } else if (!bu_strncmp(line, "ENTITIES", 8)) {
+	    } else if (!strncmp(line, "ENTITIES", 8)) {
 		curr_state->state = ENTITIES_SECTION;
 		curr_state->sub_state =UNKNOWN_ENTITY_STATE;
 		// if (verbose) {
 		//     bu_log("Change state to %d\n", curr_state->state);
 		// }
 		break;
-	    } else if (!bu_strncmp(line, "OBJECTS", 7)) {
+	    } else if (!strncmp(line, "OBJECTS", 7)) {
 		curr_state->state = OBJECTS_SECTION;
 		// if (verbose) {
 		//     bu_log("Change state to %d\n", curr_state->state);
 		// }
 		break;
-	    } else if (!bu_strncmp(line, "THUMBNAILIMAGE", 14)) {
+	    } else if (!strncmp(line, "THUMBNAILIMAGE", 14)) {
 		curr_state->state = THUMBNAILIMAGE_SECTION;
 		// if (verbose) {
 		//     bu_log("Change state to %d\n", curr_state->state);
@@ -471,16 +471,16 @@ process_header_code(int code)
 	    printf("%s\n", line);
 	    break;
 	case 0:		/* text string */
-	    if (!bu_strncmp(line, "SECTION", 7)) {
+	    if (!strncmp(line, "SECTION", 7)) {
 		curr_state->state = UNKNOWN_SECTION;
 		break;
-	    } else if (!bu_strncmp(line, "ENDSEC", 6)) {
+	    } else if (!strncmp(line, "ENDSEC", 6)) {
 		curr_state->state = UNKNOWN_SECTION;
 		break;
 	    }
 	    break;
 	case 9:		/* variable name */
-	    if (!bu_strncmp(line, "$INSUNITS", 9)) {
+	    if (!strncmp(line, "$INSUNITS", 9)) {
 		int_ptr = &units;
 	    } else if (BU_STR_EQUAL(line, "$CECOLOR")) {
 		int_ptr = &color_by_layer;
@@ -509,10 +509,10 @@ process_classes_code(int code)
 	    printf("%s\n", line);
 	    break;
 	case 0:		/* text string */
-	    if (!bu_strncmp(line, "SECTION", 7)) {
+	    if (!strncmp(line, "SECTION", 7)) {
 		curr_state->state = UNKNOWN_SECTION;
 		break;
-	    } else if (!bu_strncmp(line, "ENDSEC", 6)) {
+	    } else if (!strncmp(line, "ENDSEC", 6)) {
 		curr_state->state = UNKNOWN_SECTION;
 		break;
 	    }
@@ -547,10 +547,10 @@ process_tables_unknown_code(int code)
 		curr_color = 0;
 		curr_state->sub_state = UNKNOWN_TABLE_STATE;
 		break;
-	    } else if (!bu_strncmp(line, "SECTION", 7)) {
+	    } else if (!strncmp(line, "SECTION", 7)) {
 		curr_state->state = UNKNOWN_SECTION;
 		break;
-	    } else if (!bu_strncmp(line, "ENDSEC", 6)) {
+	    } else if (!strncmp(line, "ENDSEC", 6)) {
 		curr_state->state = UNKNOWN_SECTION;
 		break;
 	    }
@@ -619,21 +619,21 @@ process_blocks_code(int code)
 	    printf("%s\n", line);
 	    break;
 	case 0:		/* text string */
-	    if (!bu_strncmp(line, "SECTION", 7)) {
+	    if (!strncmp(line, "SECTION", 7)) {
 		curr_state->state = UNKNOWN_SECTION;
 		break;
-	    } else if (!bu_strncmp(line, "ENDSEC", 6)) {
+	    } else if (!strncmp(line, "ENDSEC", 6)) {
 		curr_state->state = UNKNOWN_SECTION;
 		break;
 	    } else if (BU_STR_EQUAL(line, "ENDBLK")) {
 		curr_block = NULL;
 		break;
-	    } else if (!bu_strncmp(line, "BLOCK", 5)) {
+	    } else if (!strncmp(line, "BLOCK", 5)) {
 		/* start of a new block */
 
 		BU_ALLOC(curr_block, struct block_list);
 		curr_block->offset = bu_ftell(dxf);
-		BU_LIST_INSERT(&(block_head), &(curr_block->l));
+		list_INSERT(&(block_head), &(curr_block->l));
 		break;
 	    }
 	    break;
@@ -669,15 +669,15 @@ process_blocks_code(int code)
 
 
 void
-add_polyline_vertex(fastf_t x, fastf_t y, fastf_t z)
+add_polyline_vertex(double x, double y, double z)
 {
     if (!polyline_verts) {
-	polyline_verts = (fastf_t *)bu_malloc(POLYLINE_VERTEX_BLOCK*3*sizeof(fastf_t), "polyline_verts");
+	polyline_verts = (double *)bu_malloc(POLYLINE_VERTEX_BLOCK*3*sizeof(double), "polyline_verts");
 	polyline_vertex_count = 0;
 	polyline_vertex_max = POLYLINE_VERTEX_BLOCK;
     } else if (polyline_vertex_count >= polyline_vertex_max) {
 	polyline_vertex_max += POLYLINE_VERTEX_BLOCK;
-	polyline_verts = (fastf_t *)bu_realloc(polyline_verts, polyline_vertex_max * 3 * sizeof(fastf_t), "polyline_verts");
+	polyline_verts = (double *)bu_realloc(polyline_verts, polyline_vertex_max * 3 * sizeof(double), "polyline_verts");
     }
 
     VSET(&polyline_verts[polyline_vertex_count*3], x, y, z);
@@ -731,7 +731,7 @@ process_point_entities_code(int code)
 static int
 process_entities_polyline_vertex_code(int code)
 {
-    static fastf_t x, y, z;
+    static double x, y, z;
     static int face[4];
     static int vertex_flag;
     int coord;
@@ -778,7 +778,7 @@ process_entities_polyline_vertex_code(int code)
 		if (polyline_vert_indices_count >= polyline_vert_indices_max) {
 		    polyline_vert_indices_max += POLYLINE_VERTEX_BLOCK;
 		    polyline_vert_indices = (int *)bu_realloc(polyline_vert_indices,
-							      polyline_vert_indices_max * sizeof(int),
+							        polyline_vert_indices_max * sizeof(int),
 							      "polyline_vert_indices");
 		}
 		VSET(tmp_pt1, x, y, z);
@@ -828,7 +828,7 @@ process_entities_polyline_code(int code)
 	    break;
 	case 0:		/* text string */
 	    get_layer();
-	    if (!bu_strncmp(line, "SEQEND", 6)) {
+	    if (!strncmp(line, "SEQEND", 6)) {
 		/* build any polyline meshes here */
 		if (polyline_flag & POLY_3D_MESH) {
 		    if (polyline_vert_indices_count == 0) {
@@ -936,7 +936,7 @@ process_entities_polyline_code(int code)
 		    bu_log("sub_state changed to %d\n", curr_state->sub_state);
 		}
 		break;
-	    } else if (!bu_strncmp(line, "VERTEX", 6)) {
+	    } else if (!strncmp(line, "VERTEX", 6)) {
 		if (verbose)
 		    bu_log("Found a POLYLINE VERTEX\n");
 		curr_state->sub_state = POLYLINE_VERTEX_ENTITY_STATE;
@@ -987,13 +987,13 @@ process_entities_unknown_code(int code)
 	    printf("%s\n", line);
 	    break;
 	case 0:		/* text string */
-	    if (!bu_strncmp(line, "SECTION", 7)) {
+	    if (!strncmp(line, "SECTION", 7)) {
 		curr_state->state = UNKNOWN_SECTION;
 		break;
-	    } else if (!bu_strncmp(line, "ENDSEC", 6)) {
+	    } else if (!strncmp(line, "ENDSEC", 6)) {
 		curr_state->state = UNKNOWN_SECTION;
 		break;
-	    } else if (!bu_strncmp(line, "POLYLINE", 8)) {
+	    } else if (!strncmp(line, "POLYLINE", 8)) {
 		if (verbose)
 		    bu_log("Found a POLYLINE\n");
 		curr_state->sub_state = POLYLINE_ENTITY_STATE;
@@ -1001,7 +1001,7 @@ process_entities_unknown_code(int code)
 		    bu_log("sub_state changed to %d\n", curr_state->sub_state);
 		}
 		break;
-	    } else if (!bu_strncmp(line, "LWPOLYLINE", 10)) {
+	    } else if (!strncmp(line, "LWPOLYLINE", 10)) {
 		if (verbose)
 		    bu_log("Found a LWPOLYLINE\n");
 		curr_state->sub_state = LWPOLYLINE_ENTITY_STATE;
@@ -1009,7 +1009,7 @@ process_entities_unknown_code(int code)
 		    bu_log("sub_state changed to %d\n", curr_state->sub_state);
 		}
 		break;
-	    } else if (!bu_strncmp(line, "3DFACE", 6)) {
+	    } else if (!strncmp(line, "3DFACE", 6)) {
 		curr_state->sub_state = FACE3D_ENTITY_STATE;
 		if (verbose) {
 		    bu_log("sub_state changed to %d\n", curr_state->sub_state);
@@ -1045,7 +1045,7 @@ process_entities_unknown_code(int code)
 		    bu_log("sub_state changed to %d\n", curr_state->sub_state);
 		}
 		break;
-	    } else if (!bu_strncmp(line, "LINE", 4)) {
+	    } else if (!strncmp(line, "LINE", 4)) {
 		curr_state->sub_state = LINE_ENTITY_STATE;
 		if (verbose) {
 		    bu_log("sub_state changed to %d\n", curr_state->sub_state);
@@ -1093,10 +1093,10 @@ process_entities_unknown_code(int code)
 		    bu_log("sub_state changed to %d\n", curr_state->sub_state);
 		}
 		break;
-	    } else if (!bu_strncmp(line, "VIEWPORT", 8)) {
+	    } else if (!strncmp(line, "VIEWPORT", 8)) {
 		/* not a useful entity, just ignore it */
 		break;
-	    } else if (!bu_strncmp(line, "INSERT", 6)) {
+	    } else if (!strncmp(line, "INSERT", 6)) {
 		curr_state->sub_state = INSERT_ENTITY_STATE;
 		if (verbose) {
 		    bu_log("sub_state changed to %d\n", curr_state->sub_state);
@@ -1105,7 +1105,7 @@ process_entities_unknown_code(int code)
 	    } else if (BU_STR_EQUAL(line, "ENDBLK")) {
 		/* found end of an inserted block, pop the state stack */
 		tmp_state = curr_state;
-		BU_LIST_POP(state_data, &state_stack, curr_state);
+		list_POP(state_data, &state_stack, curr_state);
 		if (!curr_state) {
 		    bu_log("ERROR: end of block encountered while not inserting!!!\n");
 		    curr_state = tmp_state;
@@ -1164,12 +1164,12 @@ process_insert_entities_code(int code)
 	    curr_layer_name = make_brlcad_name(line);
 	    break;
 	case 2:		/* block name */
-	    for (BU_LIST_FOR(blk, block_list, &block_head)) {
+	    for (list_FOR(blk, block_list, &block_head)) {
 		if (BU_STR_EQUAL(blk->block_name, line)) {
 		    break;
 		}
 	    }
-	    if (BU_LIST_IS_HEAD(blk, &block_head)) {
+	    if (list_IS_HEAD(blk, &block_head)) {
 		bu_log("ERROR: INSERT references non-existent block (%s)\n", line);
 		bu_log("\tignoring missing block\n");
 		blk = NULL;
@@ -1223,7 +1223,7 @@ process_insert_entities_code(int code)
 		bn_mat_mul(tmp1, rot, scale);
 		bn_mat_mul(tmp2, xlate, tmp1);
 		bn_mat_mul(new_state->xform, tmp2, curr_state->xform);
-		BU_LIST_PUSH(&state_stack, &(curr_state->l));
+		list_PUSH(&state_stack, &(curr_state->l));
 		curr_state = new_state;
 		new_state = NULL;
 		bu_fseek(dxf, curr_state->curr_block->offset, SEEK_SET);
@@ -1341,7 +1341,7 @@ process_lwpolyline_entities_code(int code)
 {
     point_t tmp_pt;
     static int vert_no = 0;
-    static fastf_t x, y;
+    static double x, y;
 
     switch (code) {
 	case 8:
@@ -1677,7 +1677,7 @@ static int
 process_circle_entities_code(int code)
 {
     static point_t center;
-    static fastf_t radius;
+    static double radius;
     int coord, i;
     struct vertex *v0=NULL, *v1=NULL, *v2=NULL;
     struct edgeuse *eu;
@@ -1901,10 +1901,10 @@ drawString(char *theText, point_t firstAlignmentPoint, point_t secondAlignmentPo
     char *copyOfText;
     char *c, *cp;
     vect_t diff;
-    struct bu_list vhead;
+    struct list vhead;
     int maxLineLen = 0;
 
-    BU_LIST_INIT(&vhead);
+    list_INIT(&vhead);
 
     copyOfText = (char *)bu_calloc((unsigned int)strlen(theText)+1, 1, "copyOfText");
     c = theText;
@@ -1978,7 +1978,7 @@ void
 drawMtext(char *text, int attachPoint, int UNUSED(drawingDirection), double textHeight, double entityHeight,
 	  double charWidth, double UNUSED(rectWidth), double rotationAngle, double insertionPoint[3])
 {
-    struct bu_list vhead;
+    struct list vhead;
     int done;
     char *c;
     char *cp;
@@ -1992,7 +1992,7 @@ drawMtext(char *text, int attachPoint, int UNUSED(drawingDirection), double text
     double radians = rotationAngle * DEG2RAD;
     char *copyOfText = (char *)bu_calloc((unsigned int)strlen(text)+1, 1, "copyOfText");
 
-    BU_LIST_INIT(&vhead);
+    list_INIT(&vhead);
 
     c = text;
     cp = copyOfText;
@@ -2484,14 +2484,14 @@ process_dimension_entities_code(int code)
 		if (verbose) {
 		    bu_log("Created a new state for DIMENSION\n");
 		}
-		for (BU_LIST_FOR(blk, block_list, &block_head)) {
+		for (list_FOR(blk, block_list, &block_head)) {
 		    if (block_name) {
 			if (BU_STR_EQUAL(blk->block_name, block_name)) {
 			    break;
 			}
 		    }
 		}
-		if (BU_LIST_IS_HEAD(blk, &block_head)) {
+		if (list_IS_HEAD(blk, &block_head)) {
 		    bu_log("ERROR: DIMENSION references non-existent block (%s)\n", block_name);
 		    bu_log("\tignoring missing block\n");
 		    blk = NULL;
@@ -2506,7 +2506,7 @@ process_dimension_entities_code(int code)
 		}
 
 		if (new_state->curr_block) {
-		    BU_LIST_PUSH(&state_stack, &(curr_state->l));
+		    list_PUSH(&state_stack, &(curr_state->l));
 		    curr_state = new_state;
 		    new_state = NULL;
 		    bu_fseek(dxf, curr_state->curr_block->offset, SEEK_SET);
@@ -2533,8 +2533,8 @@ static int
 process_arc_entities_code(int code)
 {
     static point_t center={0, 0, 0};
-    static fastf_t radius;
-    static fastf_t start_angle, end_angle;
+    static double radius;
+    static double start_angle, end_angle;
     int num_segs;
     int coord, i;
     struct vertex *v0=NULL, *v1=NULL, *v2=NULL;
@@ -2687,10 +2687,10 @@ process_spline_entities_code(int code)
     static int numKnots = 0;
     static int numCtlPts = 0;
     static int numFitPts = 0;
-    static fastf_t *knots = NULL;
-    static fastf_t *weights = NULL;
-    static fastf_t *ctlPts = NULL;
-    static fastf_t *fitPts = NULL;
+    static double *knots = NULL;
+    static double *weights = NULL;
+    static double *ctlPts = NULL;
+    static double *fitPts = NULL;
     static int knotCount = 0;
     static int weightCount = 0;
     static int ctlPtCount = 0;
@@ -2705,9 +2705,9 @@ process_spline_entities_code(int code)
     struct vertex *v1 = NULL;
     struct vertex *v2 = NULL;
     struct edgeuse *eu;
-    fastf_t startParam;
-    fastf_t stopParam;
-    fastf_t paramDelta;
+    double startParam;
+    double stopParam;
+    double paramDelta;
     point_t pt;
 
     switch (code) {
@@ -2731,16 +2731,16 @@ process_spline_entities_code(int code)
 	case 72:
 	    numKnots = atoi(line);
 	    if (numKnots > 0) {
-		knots = (fastf_t *)bu_malloc(numKnots*sizeof(fastf_t),
+		knots = (double *)bu_malloc(numKnots*sizeof(double),
 					     "spline knots");
 	    }
 	    break;
 	case 73:
 	    numCtlPts = atoi(line);
 	    if (numCtlPts > 0) {
-		ctlPts = (fastf_t *)bu_malloc(numCtlPts*3*sizeof(fastf_t),
+		ctlPts = (double *)bu_malloc(numCtlPts*3*sizeof(double),
 					      "spline control points");
-		weights = (fastf_t *)bu_malloc(numCtlPts*sizeof(fastf_t),
+		weights = (double *)bu_malloc(numCtlPts*sizeof(double),
 					       "spline weights");
 	    }
 	    for (i = 0; i < numCtlPts; i++) {
@@ -2750,7 +2750,7 @@ process_spline_entities_code(int code)
 	case 74:
 	    numFitPts = atoi(line);
 	    if (numFitPts > 0) {
-		fitPts = (fastf_t *)bu_malloc(numFitPts*3*sizeof(fastf_t),
+		fitPts = (double *)bu_malloc(numFitPts*3*sizeof(double),
 					      "fit control points");
 	    }
 	    break;
@@ -2836,7 +2836,7 @@ process_spline_entities_code(int code)
 	    paramDelta = (stopParam - startParam) / (double)splineSegs;
 	    nmg_nurb_c_eval(crv, startParam, pt);
 	    for (i = 0; i < splineSegs; i++) {
-		fastf_t param = startParam + paramDelta * (i+1);
+		double param = startParam + paramDelta * (i+1);
 		eu = nmg_me(v1, v2, layers[curr_layer]->s);
 		v1 = eu->vu_p->v_p;
 		if (i == 0) {
@@ -2966,10 +2966,10 @@ process_objects_code(int code)
 	    printf("%s\n", line);
 	    break;
 	case 0:		/* text string */
-	    if (!bu_strncmp(line, "SECTION", 7)) {
+	    if (!strncmp(line, "SECTION", 7)) {
 		curr_state->state = UNKNOWN_SECTION;
 		break;
-	    } else if (!bu_strncmp(line, "ENDSEC", 6)) {
+	    } else if (!strncmp(line, "ENDSEC", 6)) {
 		curr_state->state = UNKNOWN_SECTION;
 		break;
 	    }
@@ -2988,10 +2988,10 @@ process_thumbnail_code(int code)
 	    printf("%s\n", line);
 	    break;
 	case 0:		/* text string */
-	    if (!bu_strncmp(line, "SECTION", 7)) {
+	    if (!strncmp(line, "SECTION", 7)) {
 		curr_state->state = UNKNOWN_SECTION;
 		break;
-	    } else if (!bu_strncmp(line, "ENDSEC", 6)) {
+	    } else if (!strncmp(line, "ENDSEC", 6)) {
 		curr_state->state = UNKNOWN_SECTION;
 		break;
 	    }
@@ -3025,14 +3025,14 @@ nmg_wire_edges_to_sketch(struct model *m)
 
     tree = bn_vert_tree_create();
     bu_ptbl_init(&segs, 64, "segs for sketch");
-    for (BU_LIST_FOR(r, nmgregion, &m->r_hd)) {
-	for (BU_LIST_FOR(s, shell, &r->s_hd)) {
+    for (list_FOR(r, nmgregion, &m->r_hd)) {
+	for (list_FOR(s, shell, &r->s_hd)) {
 	    struct edgeuse *eu1;
 
 	    /* add a line segment for each wire edge */
 	    bu_ptbl_reset(&segs);
 	    eu1 = NULL;
-	    for (BU_LIST_FOR(eu, edgeuse, &s->eu_hd)) {
+	    for (list_FOR(eu, edgeuse, &s->eu_hd)) {
 		struct line_seg * lseg;
 		if (eu == eu1) {
 		    continue;
@@ -3100,7 +3100,7 @@ readcodes()
 	return ERROR_FLAG;
     }
 
-    if (!bu_strncmp(line, "EOF", 3)) {
+    if (!strncmp(line, "EOF", 3)) {
 	return EOF_FLAG;
     }
 
@@ -3129,7 +3129,7 @@ readcodes()
 int
 main(int argc, char *argv[])
 {
-    struct bu_list head_all;
+    struct list head_all;
     size_t name_len;
     char *ptr1, *ptr2;
     int code;
@@ -3138,7 +3138,7 @@ main(int argc, char *argv[])
 
     tol_sq = tol * tol;
 
-    delta_angle = M_2PI / (fastf_t)segs_per_circle;
+    delta_angle = M_2PI / (double)segs_per_circle;
     sin_delta = sin(delta_angle);
     cos_delta = cos(delta_angle);
 
@@ -3205,8 +3205,8 @@ main(int argc, char *argv[])
 
     mk_id(out_fp, base_name);
 
-    BU_LIST_INIT(&block_head);
-    BU_LIST_INIT(&free_hd);
+    list_INIT(&block_head);
+    list_INIT(&free_hd);
 
     process_code[UNKNOWN_SECTION] = process_unknown_code;
     process_code[HEADER_SECTION] = process_header_code;
@@ -3247,7 +3247,7 @@ main(int argc, char *argv[])
     }
 
     /* initialize state stack */
-    BU_LIST_INIT(&state_stack);
+    list_INIT(&state_stack);
 
     /* create initial state */
     BU_ALLOC(curr_state, struct state_data);
@@ -3276,12 +3276,12 @@ main(int argc, char *argv[])
 	process_code[curr_state->state](code);
     }
 
-    BU_LIST_INIT(&head_all);
+    list_INIT(&head_all);
     for (i = 0; i < next_layer; i++) {
-	struct bu_list head;
+	struct list head;
 	size_t j;
 
-	BU_LIST_INIT(&head);
+	list_INIT(&head);
 
 	if (layers[i]->color_number < 0)
 	    layers[i]->color_number = 7;
@@ -3294,7 +3294,7 @@ main(int argc, char *argv[])
 	    sprintf(tmp_name, "bot.s%d", i);
 	    if (mk_bot(out_fp, tmp_name, RT_BOT_SURFACE, RT_BOT_UNORIENTED, 0,
 		       layers[i]->vert_tree->curr_vert, layers[i]->curr_tri, layers[i]->vert_tree->the_array,
-		       layers[i]->part_tris, (fastf_t *)NULL, (struct bu_bitv *)NULL)) {
+		       layers[i]->part_tris, (double *)NULL, (struct bu_bitv *)NULL)) {
 		bu_log("Failed to make Bot\n");
 	    } else {
 		(void)mk_addmember(tmp_name, &head, NULL, WMOP_UNION);
@@ -3382,7 +3382,7 @@ main(int argc, char *argv[])
 	}
 
 
-	if (BU_LIST_NON_EMPTY(&head)) {
+	if (list_NON_EMPTY(&head)) {
 	    unsigned char *tmp_rgb;
 	    struct bu_vls comb_name = BU_VLS_INIT_ZERO;
 
@@ -3399,7 +3399,7 @@ main(int argc, char *argv[])
     }
 
 
-    if (BU_LIST_NON_EMPTY(&head_all)) {
+    if (list_NON_EMPTY(&head_all)) {
 	struct bu_vls top_name = BU_VLS_INIT_ZERO;
 	int count = 0;
 
