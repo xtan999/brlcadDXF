@@ -269,7 +269,7 @@ make_brlcad_name(const char *nameline)
     char *name;
     char *c;
 
-    name = bu_strdup(nameline);
+    name = strdup(nameline);
 
     c = name;
     while (*c != '\0') {
@@ -325,7 +325,7 @@ get_layer()
 	// if (verbose) {
 	//     bu_log("New layer: %s, color number: %d", line, curr_color);
 	// }
-	layers[curr_layer]->name = bu_strdup(curr_layer_name);
+	layers[curr_layer]->name = strdup(curr_layer_name);
 	layers[curr_layer]->name = curr_layer_name;
 	if (curr_state->state == ENTITIES_SECTION &&
 	    (curr_state->sub_state == POLYLINE_ENTITY_STATE ||
@@ -640,7 +640,7 @@ process_blocks_code(int code)
 	    break;
 	case 2:		/* block name */
 	    if (curr_block && curr_block->block_name == NULL) {
-		curr_block->block_name = bu_strdup(line);
+		curr_block->block_name = strdup(line);
 		if (verbose) {
 		    // bu_log("BLOCK %s begins at %jd\n",
 			//    curr_block->block_name,
@@ -652,7 +652,7 @@ process_blocks_code(int code)
 	    if (curr_block && strcmp("" ,curr_block->handle)) {
 		len = strlen(line);
 		V_MIN(len, 16);
-		bu_strlcpy(curr_block->handle, line, len);
+		strlcpy(curr_block->handle, line, len);
 	    }
 	    break;
 	case 10:
@@ -719,7 +719,7 @@ process_point_entities_code(int code)
 	    MAT4X3PNT(tmp_pt, curr_state->xform, pt);
 	    // sprintf(tmp_name, "point.%lu", (long unsigned int)layers[curr_layer]->point_count);
 	    (void)mk_sph(out_fp, tmp_name, tmp_pt, 0.1);
-	    (void)bu_ptbl_ins(&(layers[curr_layer]->solids), (long *)bu_strdup(tmp_name));
+	    (void)bu_ptbl_ins(&(layers[curr_layer]->solids), (long *)strdup(tmp_name));
 	    curr_state->sub_state = UNKNOWN_ENTITY_STATE;
 	    process_entities_code[curr_state->sub_state](code);
 	    break;
@@ -2318,7 +2318,7 @@ process_mtext_entities_code(int code)
 		char noname[] = "NO_NAME";
 		char *t = NULL;
 		if (vls) {
-		    t = bu_strdup(bu_vls_cstr(vls));
+		    t = strdup(bu_vls_cstr(vls));
 		}
 		drawMtext((t) ? t : noname, attachPoint, drawingDirection, textHeight, entityHeight,
 			  charWidth, rectWidth, rotationAngle, insertionPoint);
@@ -2372,7 +2372,7 @@ process_text_attrib_entities_code(int code)
 
     switch (code) {
 	case 1:
-	    theText = bu_strdup(line);
+	    theText = strdup(line);
 	    break;
 	case 8:		/* layer name */
 	    if (curr_layer_name) {
@@ -2470,7 +2470,7 @@ process_dimension_entities_code(int code)
 	    curr_layer_name = make_brlcad_name(line);
 	    break;
 	case 2:	/* block name */
-	    block_name = bu_strdup(line); //what to replace ??
+	    block_name = strdup(line); //what to replace ??
 	    break;
 	case 0:
 	    if (block_name != NULL) {
@@ -3196,7 +3196,7 @@ main(int argc, char *argv[])
 	name_len = ptr2 - ptr1;
 
     base_name = (char *)alloc((unsigned int)name_len + 1, 1, "base_name");
-    bu_strlcpy(base_name , ptr1 , name_len+1);
+    strlcpy(base_name , ptr1 , name_len+1);
 
     mk_id(out_fp, base_name);
 
@@ -3259,13 +3259,13 @@ main(int argc, char *argv[])
     for (i = 0; i < max_layers; i++) {
 	BU_ALLOC(layers[i], struct layer);
     }
-    layers[0]->name = bu_strdup("noname");
+    layers[0]->name = strdup("noname");
     layers[0]->color_number = 7;	/* default white */
     layers[0]->vert_tree = bn_vert_tree_create();
     bu_ptbl_init(&layers[0]->solids, 8, "layers[curr_layer]->solids");
 
     curr_color = layers[0]->color_number;
-    curr_layer_name = bu_strdup(layers[0]->name); // what does bu_strdup do??
+    curr_layer_name = strdup(layers[0]->name); 
 
     while ((code=readcodes()) > -900) {
 	process_code[curr_state->state](code);
