@@ -34,7 +34,11 @@
 #include <ctype.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <sys/types.h>
 #include <string.h>
+#include <list>
+#include <vector>
+#include <string>
 // #include "bio.h"
 
 /* interface headers */
@@ -50,7 +54,6 @@
 /* private headers */
 #include "./dxf.h"
 
-#define MAX_STRING_LEN  80
 
 static int overstrikemode = 0;
 static int underscoremode = 0;
@@ -64,7 +67,7 @@ struct insert_data {
 
 
 struct state_data {
-    struct bu_list l;
+    std::list<uint32_t> l;
     struct block_list *curr_block;
     off_t file_offset;
     int state;
@@ -73,7 +76,7 @@ struct state_data {
 };
 
 
-static struct bu_list state_stack;
+static std::list<uint32_t> state_stack;
 static struct state_data *curr_state;
 static int curr_color=7;
 static int ignore_colors = 0;
@@ -109,7 +112,7 @@ struct layer {
 
 
 struct block_list {
-    struct bu_list l;
+    std::list<uint32_t> l;
     char *block_name;
     off_t offset;
     char handle[17];
@@ -117,7 +120,7 @@ struct block_list {
 };
 
 
-static struct bu_list block_head;
+static std::list<std::list<uint32_t>> block_head;
 static struct block_list *curr_block=NULL;
 
 static struct layer **layers=NULL;
@@ -232,7 +235,7 @@ static double sin_delta, cos_delta;
 static double delta_angle;
 static double *circle_pts[3];
 static double scale_factor;
-static struct bu_list free_hd;
+static std::list<uint32_t> free_hd;
 
 #define TRI_BLOCK 512			/* number of triangles to malloc per call */
 
@@ -638,7 +641,8 @@ process_blocks_code(int code)
 
 		malloc(curr_block);
 		curr_block->offset = ftell(dxf); // file system ??
-		BU_LIST_INSERT(&(block_head), &(curr_block->l));
+		block_head.insert(curr_block->l)
+		// BU_LIST_INSERT(&(block_head), &(curr_block->l));
 		break;
 	    }
 	    break;
@@ -1576,9 +1580,9 @@ process_ellipse_entities_code(int code)
 		fprintf(stderr, "Found an ellipse\n");
 	    }
 
-	    if (!layers[curr_layer]->m) {
-		create_nmg();
-	    }
+	    // if (!layers[curr_layer]->m) {
+		// create_nmg();
+	    // }
 
 	    layers[curr_layer]->ellipse_count++;
 
@@ -2227,7 +2231,7 @@ process_leader_entities_code(int code)
 static int
 process_mtext_entities_code(int code)
 {
-    static char *vls[MAX_STRING_LEN];
+    std::string vls;
     static int attachPoint = 0;
     static int drawingDirection = 0;
     static double textHeight = 0.0;
@@ -3396,7 +3400,6 @@ main(int argc, char *argv[])
 	}
 
     }
-
 
     if (BU_LIST_NON_EMPTY(&head_all)) {
 	char *top_name = BU_VLS_INIT_ZERO; // variable length string??
