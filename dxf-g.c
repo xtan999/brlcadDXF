@@ -54,7 +54,33 @@
 /* private headers */
 #include "./dxf.h"
 
+/* replicated code from vmath.h to avoid dependency */
+#define X       0
+#define Y       1
+#define Z       2
+#define H       3
+#define W       H
+#define M_PI  3.14159265358979323846
+#define VSETALL(a,s)    { (a)[X] = (a)[Y] = (a)[Z] = (s); }
+#define V_MIN(r,s)      if( (s) < (r) ) r = (s)
+#define MAT4X3PNT(o,m,i) \
+        { register double _f; \
+        _f = 1.0/((m)[12]*(i)[X] + (m)[13]*(i)[Y] + (m)[14]*(i)[Z] + (m)[15]);\
+        (o)[X]=((m)[0]*(i)[X] + (m)[1]*(i)[Y] + (m)[ 2]*(i)[Z] + (m)[3]) * _f;\
+        (o)[Y]=((m)[4]*(i)[X] + (m)[5]*(i)[Y] + (m)[ 6]*(i)[Z] + (m)[7]) * _f;\
+        (o)[Z]=((m)[8]*(i)[X] + (m)[9]*(i)[Y] + (m)[10]*(i)[Z] + (m)[11])* _f;}
 
+/* replicated code from color.c to avoid dependency */
+#define V3ARGS(a) (a)[X], (a)[Y], (a)[Z]
+#define VSET(a, b, c, d) { (a)[X] = (b); (a)[Y] = (c); (a)[Z] = (d); }
+
+// /* replicated code from ptbl.h to avoid dependency */
+// struct bu_ptbl {
+//     std::list<uint32_t> l; /**< linked list for caller's use */
+//     off_t end;        /**< index into buffer of first available location */
+//     size_t blen;      /**< # of (long *)'s worth of storage at *buffer */
+//     long **buffer;    /**< data storage area */
+// };
 static int overstrikemode = 0;
 static int underscoremode = 0;
 
@@ -120,7 +146,7 @@ struct block_list {
 };
 
 
-static std::list<std::list<uint32_t>> block_head;
+std::list<block_list> block_head;  // a list of block_list ??
 static struct block_list *curr_block=NULL;
 
 static struct layer **layers=NULL;
@@ -280,10 +306,10 @@ make_brlcad_name(const char *nameline)
 
     c = name;
     while (*c != '\0') {
-	if (*c == '/' || *c == '[' || *c == ']' || *c == '*' || isspace((int)*c)) {
-	    *c = '_';
-	}
-	c++;
+		if (*c == '/' || *c == '[' || *c == ']' || *c == '*' || isspace((int)*c)) {
+			*c = '_';
+		}
+		c++;
     }
 
     return name;
@@ -303,17 +329,17 @@ get_layer()
     /* do we already have a layer by this name and color */
     curr_layer = -1;
     for (i = 1; i < next_layer; i++) {
-	if (!color_by_layer && !ignore_colors && curr_color != 256) {
-	    if (layers[i]->color_number == curr_color && layers[i]->name == curr_layer_name) {
-		curr_layer = i;
-		break;
-	    }
-	} else {
-	    if (layers[i]->name == curr_layer_name) {
-		curr_layer = i;
-		break;
-	    }
-	}
+		if (!color_by_layer && !ignore_colors && curr_color != 256) {
+			if (layers[i]->color_number == curr_color && layers[i]->name == curr_layer_name) {
+				curr_layer = i;
+				break;
+			}
+		} else {
+			if (layers[i]->name == curr_layer_name) {
+				curr_layer = i;
+				break;
+			}
+		}
     }
 
     if (curr_layer == -1) {
@@ -640,9 +666,9 @@ process_blocks_code(int code)
 		/* start of a new block */
 
 		malloc(curr_block);
-		curr_block->offset = ftell(dxf); // file system ??
-		block_head.insert(curr_block->l)
-		// BU_LIST_INSERT(&(block_head), &(curr_block->l));
+		curr_block->offset = ftell(dxf); // dxf file stream ??
+		block_head.push_front(*curr_block);
+		// BU_LIST_INSERT(&(block_head), &(curr_block->l)); //Insert "new" item in front of "old" item.  block_head is the head of the list.
 		break;
 	    }
 	    break;
@@ -659,7 +685,7 @@ process_blocks_code(int code)
 	case 5:		/* block handle */
 	    if (curr_block && strcmp("" ,curr_block->handle)) {
 		len = strlen(line);
-		V_MIN(len, 16);
+		V_MIN(len, 16); // ??
 		strlcpy(curr_block->handle, line, len);
 	    }
 	    break;
@@ -1112,7 +1138,8 @@ process_entities_unknown_code(int code)
 	    } else if (0 != strncmp(line, "ENDBLK", 6)) {
 		/* found end of an inserted block, pop the state stack */
 		tmp_state = curr_state;
-		BU_LIST_POP(state_data, &state_stack, curr_state);
+		//BU_LIST_POP(state_data, &state_stack, curr_state); // unsure ??
+		state_stack.pop_back();
 		if (!curr_state) {
 		    fprintf(stderr, "ERROR: end of block encountered while not inserting!!!\n");
 		    curr_state = tmp_state;
@@ -1170,13 +1197,14 @@ process_insert_entities_code(int code)
 	    }
 	    curr_layer_name = make_brlcad_name(line);
 	    break;
-	case 2:		/* block name */
-	    for (BU_LIST_FOR(blk, block_list, &block_head)) {
-		if (0 != strcmp(blk->block_name, line)) {
-		    break;
-		}
+	case 2:		/* block name */ //BU_LIST_FOR(blk, block_list, &block_head
+	    for (auto it : block_head) {
+			if (0 != strcmp(it.block_name, line)) {
+				break;
+			}
 	    }
-	    if (BU_LIST_IS_HEAD(blk, &block_head)) {
+		//BU_LIST_IS_HEAD(blk, &block_head)
+	    if (block_list_is_head(*blk, block_head)){
 		fprintf(stderr, "ERROR: INSERT references non-existent block (%s)\n", line);
 		fprintf(stderr, "\tignoring missing block\n");
 		blk = NULL;
@@ -1207,7 +1235,7 @@ process_insert_entities_code(int code)
 	case 70:
 	case 71:
 	    if (atoi(line) != 1) {
-		fprintf(stderr, "Cannot yet handle insertion of a pattern\n\tignoring\n");
+			fprintf(stderr, "Cannot yet handle insertion of a pattern\n\tignoring\n");
 	    }
 	    break;
 	case 44:
@@ -3418,6 +3446,23 @@ main(int argc, char *argv[])
     return 0;
 }
 
+bool block_list_is_head(block_list bl, std::list<block_list> list){
+	if(bl.block_name != list.begin()->block_name)
+		return false;
+	else if(bl.base != list.begin()->base)
+		return false;
+	else if(bl.handle != list.begin()->handle)
+		return false;
+	else if(bl.offset != list.begin()->offset)
+		return false;
+	for(auto bl_it : bl.l){
+		for(auto list_it : list.begin()->l){
+			if(bl_it  != list_it)
+				return false;
+		}
+	}
+	return true;
+}
 
 /*
  * Local Variables:
