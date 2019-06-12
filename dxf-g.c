@@ -39,6 +39,7 @@
 #include <list>
 #include <vector>
 #include <string>
+#include <cmath>
 // #include "bio.h"
 
 /* interface headers */
@@ -61,14 +62,101 @@
 #define H       3
 #define W       H
 #define M_PI  3.14159265358979323846
+#define MSX     0
+#define MSY     5
+#define MSZ     10
+#define MSA     15
+#define MDX     3
+#define MDY     7
+#define MDZ     11
 #define VSETALL(a,s)    { (a)[X] = (a)[Y] = (a)[Z] = (s); }
 #define V_MIN(r,s)      if( (s) < (r) ) r = (s)
+#define V_MAX(r,s)      if( (s) > (r) ) r = (s)
+#define VMOVE(a,b)      { \
+                        (a)[X] = (b)[X];\
+                        (a)[Y] = (b)[Y];\
+                        (a)[Z] = (b)[Z]; }
+#define VJOIN2(a,b,c,d,e,f)     { \
+         (a)[X] = (b)[X] + (c) * (d)[X] + (e) * (f)[X];\
+         (a)[Y] = (b)[Y] + (c) * (d)[Y] + (e) * (f)[Y];\
+         (a)[Z] = (b)[Z] + (c) * (d)[Z] + (e) * (f)[Z]; }
 #define MAT4X3PNT(o,m,i) \
         { register double _f; \
         _f = 1.0/((m)[12]*(i)[X] + (m)[13]*(i)[Y] + (m)[14]*(i)[Z] + (m)[15]);\
         (o)[X]=((m)[0]*(i)[X] + (m)[1]*(i)[Y] + (m)[ 2]*(i)[Z] + (m)[3]) * _f;\
         (o)[Y]=((m)[4]*(i)[X] + (m)[5]*(i)[Y] + (m)[ 6]*(i)[Z] + (m)[7]) * _f;\
         (o)[Z]=((m)[8]*(i)[X] + (m)[9]*(i)[Y] + (m)[10]*(i)[Z] + (m)[11])* _f;}
+#define MAT_IDN(m)      {\
+        (m)[1] = (m)[2] = (m)[3] = (m)[4] =\
+        (m)[6] = (m)[7] = (m)[8] = (m)[9] = \
+        (m)[11] = (m)[12] = (m)[13] = (m)[14] = 0.0;\
+        (m)[0] = (m)[5] = (m)[10] = (m)[15] = 1.0;}
+#define MAT_SCALE_VEC(_m, _v) {\
+        (_m)[MSX] = (_v)[X]; \
+        (_m)[MSY] = (_v)[Y]; \
+        (_m)[MSZ] = (_v)[Z]; }
+#define MAT_DELTAS(m,x,y,z)     { \
+				        (m)[MDX] = (x); \
+				        (m)[MDY] = (y); \
+				        (m)[MDZ] = (z); }
+#define MAT_DELTAS_VEC(_m,_v)   \
+                        MAT_DELTAS(_m, (_v)[X], (_v)[Y], (_v)[Z] )
+#define MAGSQ(a)  ( (a)[X]*(a)[X] + (a)[Y]*(a)[Y] + (a)[Z]*(a)[Z] )
+#define NEAR_ZERO(val,epsilon)  ( ((val) > -epsilon) && ((val) < epsilon) )
+#define VCROSS(a,b,c)   { \
+                        (a)[X] = (b)[Y] * (c)[Z] - (b)[Z] * (c)[Y];\
+                        (a)[Y] = (b)[Z] * (c)[X] - (b)[X] * (c)[Z];\
+                        (a)[Z] = (b)[X] * (c)[Y] - (b)[Y] * (c)[X]; }
+#define MAGNITUDE(a)    sqrt( MAGSQ( a ) )
+#ifdef vax
+#  define VDIVIDE_TOL   ( 1.0e-10 )
+#  define VUNITIZE_TOL  ( 1.0e-7 )
+#else
+#  ifdef DBL_EPSILON
+#    define VDIVIDE_TOL         ( DBL_EPSILON )
+#  else
+#    define VDIVIDE_TOL         ( 1.0e-20 )
+#  endif
+#  ifdef FLT_EPSILON
+#    define VUNITIZE_TOL        ( FLT_EPSILON )
+#  else
+#    define VUNITIZE_TOL        ( 1.0e-15 )
+#  endif
+#endif
+#ifdef SHORT_VECTORS
+#define VUNITIZE(a) { \
+        register double _f = MAGSQ(a); \
+        register int _vunitize; \
+        if ( ! NEAR_ZERO( _f-1.0, VUNITIZE_TOL ) ) { \
+                _f = sqrt( _f ); \
+                if( _f < VDIVIDE_TOL ) { VSETALL( (a), 0.0 ); } else { \
+                        _f = 1.0/_f; \
+                        for(_vunitize = 0; _vunitize < 3; _vunitize++) \
+                                (a)[_vunitize] *= _f; \
+                } \
+        } \
+}
+#else
+#define VUNITIZE(a)     { \
+        register double _f = MAGSQ(a); \
+        if ( ! NEAR_ZERO( _f-1.0, VUNITIZE_TOL ) ) { \
+                _f = sqrt( _f ); \
+                if( _f < VDIVIDE_TOL ) { VSETALL( (a), 0.0 ); } else { \
+                        _f = 1.0/_f; \
+                        (a)[X] *= _f; (a)[Y] *= _f; (a)[Z] *= _f; \
+                } \
+        } \
+}
+#endif
+
+#ifdef SHORT_VECTORS
+#define VADD2(a,b,c) VADD2N(a,b,c, 3)
+#else
+#define VADD2(a,b,c)    { \
+                        (a)[X] = (b)[X] + (c)[X];\
+                        (a)[Y] = (b)[Y] + (c)[Y];\
+                        (a)[Z] = (b)[Z] + (c)[Z]; }
+#endif /* SHORT_VECTORS */
 
 /* replicated code from color.c to avoid dependency */
 #define V3ARGS(a) (a)[X], (a)[Y], (a)[Z]
@@ -102,7 +190,7 @@ struct state_data {
 };
 
 
-static std::list<uint32_t> state_stack;
+static std::list<state_data> state_stack;
 static struct state_data *curr_state;
 static int curr_color=7;
 static int ignore_colors = 0;
@@ -1258,10 +1346,11 @@ process_insert_entities_code(int code)
 		bn_mat_mul(tmp1, rot, scale);
 		bn_mat_mul(tmp2, xlate, tmp1);
 		bn_mat_mul(new_state->xform, tmp2, curr_state->xform);
-		BU_LIST_PUSH(&state_stack, &(curr_state->l));
+		state_stack.push_back(*curr_state);
+		//BU_LIST_PUSH(&state_stack, &(curr_state->l));
 		curr_state = new_state;
 		new_state = NULL;
-		bu_fseek(dxf, curr_state->curr_block->offset, SEEK_SET);
+		fseek(dxf, curr_state->curr_block->offset, SEEK_SET);
 		curr_state->state = ENTITIES_SECTION;
 		curr_state->sub_state = UNKNOWN_ENTITY_STATE;
 		if (verbose) {
@@ -1556,7 +1645,7 @@ process_ellipse_entities_code(int code)
     static double majorAxis[3]={1.0, 0, 0};
     static double ratio=1.0;
     static double startAngle = 0.0;
-    static double endAngle = M_2PI;
+    static double endAngle = M_2PI; // means 2 * PI ??
     double angle, delta;
     double majorRadius, minorRadius;
     double tmp_pt[3];
@@ -1749,9 +1838,9 @@ process_circle_entities_code(int code)
 		fprintf(stderr, "Found a circle\n");
 	    }
 
-	    if (!layers[curr_layer]->m) {
-		create_nmg();
-	    }
+	    // if (!layers[curr_layer]->m) {
+		// create_nmg();
+	    // }
 
 	    layers[curr_layer]->circle_count++;
 
@@ -2098,7 +2187,7 @@ drawMtext(char *text, int attachPoint, int UNUSED(drawingDirection), double text
 	    bn_vlist_2string(&vhead, &free_hd, c,
 			     startx, starty,
 			     scale, rotationAngle);
-	    nmg_vlist_to_eu(&vhead, layers[curr_layer]->s);
+	    // nmg_vlist_to_eu(&vhead, layers[curr_layer]->s);
 	    BN_FREE_VLIST(&free_hd, &vhead);
 	    c = ++cp;
 	    startx -= lineSpace * ydir[X];
@@ -2457,9 +2546,9 @@ process_text_attrib_entities_code(int code)
 		/* draw the text */
 		get_layer();
 
-		if (!layers[curr_layer]->m) {
-		    create_nmg();
-		}
+		// if (!layers[curr_layer]->m) {
+		//     create_nmg();
+		// }
 
 		/* apply transformation */
 		MAT4X3PNT(tmp_pt, curr_state->xform, firstAlignmentPoint);
