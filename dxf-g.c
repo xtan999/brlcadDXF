@@ -39,6 +39,7 @@
 #include <list>
 #include <vector>
 #include <string>
+#include <cmath>
 // #include "bio.h"
 
 /* interface headers */
@@ -54,7 +55,120 @@
 /* private headers */
 #include "./dxf.h"
 
+/* replicated code from vmath.h to avoid dependency */
+#define X       0
+#define Y       1
+#define Z       2
+#define H       3
+#define W       H
+#define M_PI  3.14159265358979323846
+#define MSX     0
+#define MSY     5
+#define MSZ     10
+#define MSA     15
+#define MDX     3
+#define MDY     7
+#define MDZ     11
+#define VSETALL(a,s)    { (a)[X] = (a)[Y] = (a)[Z] = (s); }
+#define V_MIN(r,s)      if( (s) < (r) ) r = (s)
+#define V_MAX(r,s)      if( (s) > (r) ) r = (s)
+#define VMOVE(a,b)      { \
+                        (a)[X] = (b)[X];\
+                        (a)[Y] = (b)[Y];\
+                        (a)[Z] = (b)[Z]; }
+#define VJOIN2(a,b,c,d,e,f)     { \
+         (a)[X] = (b)[X] + (c) * (d)[X] + (e) * (f)[X];\
+         (a)[Y] = (b)[Y] + (c) * (d)[Y] + (e) * (f)[Y];\
+         (a)[Z] = (b)[Z] + (c) * (d)[Z] + (e) * (f)[Z]; }
+#define MAT4X3PNT(o,m,i) \
+        { register double _f; \
+        _f = 1.0/((m)[12]*(i)[X] + (m)[13]*(i)[Y] + (m)[14]*(i)[Z] + (m)[15]);\
+        (o)[X]=((m)[0]*(i)[X] + (m)[1]*(i)[Y] + (m)[ 2]*(i)[Z] + (m)[3]) * _f;\
+        (o)[Y]=((m)[4]*(i)[X] + (m)[5]*(i)[Y] + (m)[ 6]*(i)[Z] + (m)[7]) * _f;\
+        (o)[Z]=((m)[8]*(i)[X] + (m)[9]*(i)[Y] + (m)[10]*(i)[Z] + (m)[11])* _f;}
+#define MAT_IDN(m)      {\
+        (m)[1] = (m)[2] = (m)[3] = (m)[4] =\
+        (m)[6] = (m)[7] = (m)[8] = (m)[9] = \
+        (m)[11] = (m)[12] = (m)[13] = (m)[14] = 0.0;\
+        (m)[0] = (m)[5] = (m)[10] = (m)[15] = 1.0;}
+#define MAT_SCALE_VEC(_m, _v) {\
+        (_m)[MSX] = (_v)[X]; \
+        (_m)[MSY] = (_v)[Y]; \
+        (_m)[MSZ] = (_v)[Z]; }
+#define MAT_DELTAS(m,x,y,z)     { \
+				        (m)[MDX] = (x); \
+				        (m)[MDY] = (y); \
+				        (m)[MDZ] = (z); }
+#define MAT_DELTAS_VEC(_m,_v)   \
+                        MAT_DELTAS(_m, (_v)[X], (_v)[Y], (_v)[Z] )
+#define MAGSQ(a)  ( (a)[X]*(a)[X] + (a)[Y]*(a)[Y] + (a)[Z]*(a)[Z] )
+#define NEAR_ZERO(val,epsilon)  ( ((val) > -epsilon) && ((val) < epsilon) )
+#define VCROSS(a,b,c)   { \
+                        (a)[X] = (b)[Y] * (c)[Z] - (b)[Z] * (c)[Y];\
+                        (a)[Y] = (b)[Z] * (c)[X] - (b)[X] * (c)[Z];\
+                        (a)[Z] = (b)[X] * (c)[Y] - (b)[Y] * (c)[X]; }
+#define MAGNITUDE(a)    sqrt( MAGSQ( a ) )
+#ifdef vax
+#  define VDIVIDE_TOL   ( 1.0e-10 )
+#  define VUNITIZE_TOL  ( 1.0e-7 )
+#else
+#  ifdef DBL_EPSILON
+#    define VDIVIDE_TOL         ( DBL_EPSILON )
+#  else
+#    define VDIVIDE_TOL         ( 1.0e-20 )
+#  endif
+#  ifdef FLT_EPSILON
+#    define VUNITIZE_TOL        ( FLT_EPSILON )
+#  else
+#    define VUNITIZE_TOL        ( 1.0e-15 )
+#  endif
+#endif
+#ifdef SHORT_VECTORS
+#define VUNITIZE(a) { \
+        register double _f = MAGSQ(a); \
+        register int _vunitize; \
+        if ( ! NEAR_ZERO( _f-1.0, VUNITIZE_TOL ) ) { \
+                _f = sqrt( _f ); \
+                if( _f < VDIVIDE_TOL ) { VSETALL( (a), 0.0 ); } else { \
+                        _f = 1.0/_f; \
+                        for(_vunitize = 0; _vunitize < 3; _vunitize++) \
+                                (a)[_vunitize] *= _f; \
+                } \
+        } \
+}
+#else
+#define VUNITIZE(a)     { \
+        register double _f = MAGSQ(a); \
+        if ( ! NEAR_ZERO( _f-1.0, VUNITIZE_TOL ) ) { \
+                _f = sqrt( _f ); \
+                if( _f < VDIVIDE_TOL ) { VSETALL( (a), 0.0 ); } else { \
+                        _f = 1.0/_f; \
+                        (a)[X] *= _f; (a)[Y] *= _f; (a)[Z] *= _f; \
+                } \
+        } \
+}
+#endif
 
+#ifdef SHORT_VECTORS
+#define VADD2(a,b,c) VADD2N(a,b,c, 3)
+#else
+#define VADD2(a,b,c)    { \
+                        (a)[X] = (b)[X] + (c)[X];\
+                        (a)[Y] = (b)[Y] + (c)[Y];\
+                        (a)[Z] = (b)[Z] + (c)[Z]; }
+#endif /* SHORT_VECTORS */
+
+/* replicated code from color.c to avoid dependency */
+#define V3ARGS(a) (a)[X], (a)[Y], (a)[Z]
+#define VSET(a, b, c, d) { (a)[X] = (b); (a)[Y] = (c); (a)[Z] = (d); }
+
+// /* replicated code from ptbl.h to avoid dependency */
+// struct bu_ptbl {
+//     std::list<uint32_t> l; /**< linked list for caller's use */
+//     off_t end;        /**< index into buffer of first available location */
+//     size_t blen;      /**< # of (long *)'s worth of storage at *buffer */
+//     long **buffer;    /**< data storage area */
+// };
 static int overstrikemode = 0;
 static int underscoremode = 0;
 
@@ -76,7 +190,7 @@ struct state_data {
 };
 
 
-static std::list<uint32_t> state_stack;
+static std::list<state_data> state_stack;
 static struct state_data *curr_state;
 static int curr_color=7;
 static int ignore_colors = 0;
@@ -120,7 +234,7 @@ struct block_list {
 };
 
 
-static std::list<std::list<uint32_t>> block_head;
+std::list<block_list> block_head;  // a list of block_list ??
 static struct block_list *curr_block=NULL;
 
 static struct layer **layers=NULL;
@@ -280,10 +394,10 @@ make_brlcad_name(const char *nameline)
 
     c = name;
     while (*c != '\0') {
-	if (*c == '/' || *c == '[' || *c == ']' || *c == '*' || isspace((int)*c)) {
-	    *c = '_';
-	}
-	c++;
+		if (*c == '/' || *c == '[' || *c == ']' || *c == '*' || isspace((int)*c)) {
+			*c = '_';
+		}
+		c++;
     }
 
     return name;
@@ -303,17 +417,17 @@ get_layer()
     /* do we already have a layer by this name and color */
     curr_layer = -1;
     for (i = 1; i < next_layer; i++) {
-	if (!color_by_layer && !ignore_colors && curr_color != 256) {
-	    if (layers[i]->color_number == curr_color && layers[i]->name == curr_layer_name) {
-		curr_layer = i;
-		break;
-	    }
-	} else {
-	    if (layers[i]->name == curr_layer_name) {
-		curr_layer = i;
-		break;
-	    }
-	}
+		if (!color_by_layer && !ignore_colors && curr_color != 256) {
+			if (layers[i]->color_number == curr_color && layers[i]->name == curr_layer_name) {
+				curr_layer = i;
+				break;
+			}
+		} else {
+			if (layers[i]->name == curr_layer_name) {
+				curr_layer = i;
+				break;
+			}
+		}
     }
 
     if (curr_layer == -1) {
@@ -640,9 +754,9 @@ process_blocks_code(int code)
 		/* start of a new block */
 
 		malloc(curr_block);
-		curr_block->offset = ftell(dxf); // file system ??
-		block_head.insert(curr_block->l)
-		// BU_LIST_INSERT(&(block_head), &(curr_block->l));
+		curr_block->offset = ftell(dxf); // dxf file stream ??
+		block_head.push_front(*curr_block);
+		// BU_LIST_INSERT(&(block_head), &(curr_block->l)); //Insert "new" item in front of "old" item.  block_head is the head of the list.
 		break;
 	    }
 	    break;
@@ -659,7 +773,7 @@ process_blocks_code(int code)
 	case 5:		/* block handle */
 	    if (curr_block && strcmp("" ,curr_block->handle)) {
 		len = strlen(line);
-		V_MIN(len, 16);
+		V_MIN(len, 16); // ??
 		strlcpy(curr_block->handle, line, len);
 	    }
 	    break;
@@ -1112,7 +1226,8 @@ process_entities_unknown_code(int code)
 	    } else if (0 != strncmp(line, "ENDBLK", 6)) {
 		/* found end of an inserted block, pop the state stack */
 		tmp_state = curr_state;
-		BU_LIST_POP(state_data, &state_stack, curr_state);
+		//BU_LIST_POP(state_data, &state_stack, curr_state); // unsure ??
+		state_stack.pop_back();
 		if (!curr_state) {
 		    fprintf(stderr, "ERROR: end of block encountered while not inserting!!!\n");
 		    curr_state = tmp_state;
@@ -1170,13 +1285,14 @@ process_insert_entities_code(int code)
 	    }
 	    curr_layer_name = make_brlcad_name(line);
 	    break;
-	case 2:		/* block name */
-	    for (BU_LIST_FOR(blk, block_list, &block_head)) {
-		if (0 != strcmp(blk->block_name, line)) {
-		    break;
-		}
+	case 2:		/* block name */ //BU_LIST_FOR(blk, block_list, &block_head
+	    for (auto it : block_head) {
+			if (0 != strcmp(it.block_name, line)) {
+				break;
+			}
 	    }
-	    if (BU_LIST_IS_HEAD(blk, &block_head)) {
+		//BU_LIST_IS_HEAD(blk, &block_head)
+	    if (block_list_is_head(*blk, block_head)){
 		fprintf(stderr, "ERROR: INSERT references non-existent block (%s)\n", line);
 		fprintf(stderr, "\tignoring missing block\n");
 		blk = NULL;
@@ -1207,7 +1323,7 @@ process_insert_entities_code(int code)
 	case 70:
 	case 71:
 	    if (atoi(line) != 1) {
-		fprintf(stderr, "Cannot yet handle insertion of a pattern\n\tignoring\n");
+			fprintf(stderr, "Cannot yet handle insertion of a pattern\n\tignoring\n");
 	    }
 	    break;
 	case 44:
@@ -1230,10 +1346,11 @@ process_insert_entities_code(int code)
 		bn_mat_mul(tmp1, rot, scale);
 		bn_mat_mul(tmp2, xlate, tmp1);
 		bn_mat_mul(new_state->xform, tmp2, curr_state->xform);
-		BU_LIST_PUSH(&state_stack, &(curr_state->l));
+		state_stack.push_back(*curr_state);
+		//BU_LIST_PUSH(&state_stack, &(curr_state->l));
 		curr_state = new_state;
 		new_state = NULL;
-		bu_fseek(dxf, curr_state->curr_block->offset, SEEK_SET);
+		fseek(dxf, curr_state->curr_block->offset, SEEK_SET);
 		curr_state->state = ENTITIES_SECTION;
 		curr_state->sub_state = UNKNOWN_ENTITY_STATE;
 		if (verbose) {
@@ -1528,7 +1645,7 @@ process_ellipse_entities_code(int code)
     static double majorAxis[3]={1.0, 0, 0};
     static double ratio=1.0;
     static double startAngle = 0.0;
-    static double endAngle = M_2PI;
+    static double endAngle = M_2PI; // means 2 * PI ??
     double angle, delta;
     double majorRadius, minorRadius;
     double tmp_pt[3];
@@ -1721,9 +1838,9 @@ process_circle_entities_code(int code)
 		fprintf(stderr, "Found a circle\n");
 	    }
 
-	    if (!layers[curr_layer]->m) {
-		create_nmg();
-	    }
+	    // if (!layers[curr_layer]->m) {
+		// create_nmg();
+	    // }
 
 	    layers[curr_layer]->circle_count++;
 
@@ -2070,7 +2187,7 @@ drawMtext(char *text, int attachPoint, int UNUSED(drawingDirection), double text
 	    bn_vlist_2string(&vhead, &free_hd, c,
 			     startx, starty,
 			     scale, rotationAngle);
-	    nmg_vlist_to_eu(&vhead, layers[curr_layer]->s);
+	    // nmg_vlist_to_eu(&vhead, layers[curr_layer]->s);
 	    BN_FREE_VLIST(&free_hd, &vhead);
 	    c = ++cp;
 	    startx -= lineSpace * ydir[X];
@@ -2429,9 +2546,9 @@ process_text_attrib_entities_code(int code)
 		/* draw the text */
 		get_layer();
 
-		if (!layers[curr_layer]->m) {
-		    create_nmg();
-		}
+		// if (!layers[curr_layer]->m) {
+		//     create_nmg();
+		// }
 
 		/* apply transformation */
 		MAT4X3PNT(tmp_pt, curr_state->xform, firstAlignmentPoint);
@@ -3418,6 +3535,23 @@ main(int argc, char *argv[])
     return 0;
 }
 
+bool block_list_is_head(block_list bl, std::list<block_list> list){
+	if(bl.block_name != list.begin()->block_name)
+		return false;
+	else if(bl.base != list.begin()->base)
+		return false;
+	else if(bl.handle != list.begin()->handle)
+		return false;
+	else if(bl.offset != list.begin()->offset)
+		return false;
+	for(auto bl_it : bl.l){
+		for(auto list_it : list.begin()->l){
+			if(bl_it  != list_it)
+				return false;
+		}
+	}
+	return true;
+}
 
 /*
  * Local Variables:
