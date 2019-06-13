@@ -55,8 +55,6 @@
 /* private headers */
 #include "./dxf.h"
 
-#define DEG2RAD 
-
 /* replicated code from vmath.h to avoid dependency */
 #define X       0
 #define Y       1
@@ -161,6 +159,24 @@
                         (a)[Y] = (b)[Y] + (c)[Y];\
                         (a)[Z] = (b)[Z] + (c)[Z]; }
 #endif /* SHORT_VECTORS */
+#ifdef SHORT_VECTORS
+#define VSUB2(a,b,c)    VSUB2N(a,b,c, 3)
+#else
+#define VSUB2(a,b,c)    { \
+                        (a)[X] = (b)[X] - (c)[X];\
+                        (a)[Y] = (b)[Y] - (c)[Y];\
+                        (a)[Z] = (b)[Z] - (c)[Z]; }
+#endif /* SHORT_VECTORS */
+/** @brief Subtract `n' length vector at `c' from vector at `b', store result at `a' */
+#define VSUB2N(a,b,c,n) \
+        { register int _vsub2; \
+        for(_vsub2 = 0; _vsub2 < (n); _vsub2++) \
+                (a)[_vsub2] = (b)[_vsub2] - (c)[_vsub2]; \
+        }
+
+#define V2SUB2(a,b,c)   { \
+                        (a)[X] = (b)[X] - (c)[X];\
+                        (a)[Y] = (b)[Y] - (c)[Y];}
 
 /* replicated code from color.c to avoid dependency */
 #define V3ARGS(a) (a)[X], (a)[Y], (a)[Z]
@@ -173,6 +189,9 @@
 //     size_t blen;      /**< # of (long *)'s worth of storage at *buffer */
 //     long **buffer;    /**< data storage area */
 // };
+
+#define DEG2RAD M_PI/180.0
+#define RAD2DEG 180.0/M_PI
 
 static int overstrikemode = 0;
 static int underscoremode = 0;
@@ -476,7 +495,7 @@ bn_mat_mul(register double o[16], register const double a[16], register const do
     o[15] = a[12] * b[ 3] + a[13] * b[ 7] + a[14] * b[11] + a[15] * b[15];
 }
 
-/* added functions for list operation */
+/* Added functions for list operation */
 bool block_list_is_head(block_list bl, std::list<block_list> list){
 	if(bl.block_name != list.begin()->block_name)
 		return false;
@@ -2126,86 +2145,85 @@ convertSecretCodes(char *c, char *cp, int *maxLineLen)
 }
 
 
-void
-drawString(char *theText, double *firstAlignmentPoint, double *secondAlignmentPoint,
-	   double textHeight, double UNUSED(textScale), double textRotation, int horizAlignment, int vertAlignment, int UNUSED(textFlag))// first and second alignmentpoint are point_t
-{
-    double stringLength = 0.0;
-    char *copyOfText;
-    char *c, *cp;
-    double diff[4];
-    struct bu_list vhead;
-    int maxLineLen = 0;
+// void
+// drawString(char *theText, double *firstAlignmentPoint, double *secondAlignmentPoint,
+// 	   double textHeight, double UNUSED(textScale), double textRotation, int horizAlignment, int vertAlignment, int UNUSED(textFlag))// first and second alignmentpoint are point_t
+// {
+//     double stringLength = 0.0;
+//     char *copyOfText;
+//     char *c, *cp;
+//     double diff[4];
+//     std::list<uint32_t> vhead;
+//     int maxLineLen = 0;
 
-    //BU_LIST_INIT(&vhead);
-	std::list<uint32_t> vhead;
+//     //BU_LIST_INIT(&vhead);
 
-    copyOfText = (char *)alloc((unsigned int)strlen(theText)+1, 1, "copyOfText"); //bu_calloc
-    c = theText;
-    cp = copyOfText;
-    (void)convertSecretCodes(c, cp, &maxLineLen);
+//     copyOfText = (char *)alloc((unsigned int)strlen(theText)+1, 1, "copyOfText"); //bu_calloc
+//     c = theText;
+//     cp = copyOfText;
+//     (void)convertSecretCodes(c, cp, &maxLineLen);
 
-    free(theText); //"theText");
-    stringLength = strlen(copyOfText);
+//     free(theText); //"theText");
+//     stringLength = strlen(copyOfText);
 
-    if (horizAlignment == FIT && vertAlignment == BASELINE) {
-	double allowedLength;
-	double xScale=1.0;
-	double yScale=1.0;
-	double scale;
+//     if (horizAlignment == FIT && vertAlignment == BASELINE) {
+// 	double allowedLength;
+// 	double xScale=1.0;
+// 	double yScale=1.0;
+// 	double scale;
 
-	/* fit along baseline */
-	VSUB2(diff, firstAlignmentPoint, secondAlignmentPoint);
-	allowedLength = MAGNITUDE(diff);
-	xScale = allowedLength / stringLength;
-	yScale = textHeight;
-	scale = xScale < yScale ? xScale : yScale;
-	bn_vlist_2string(&vhead, &free_hd, copyOfText,
-			 firstAlignmentPoint[X], firstAlignmentPoint[Y],
-			 scale, textRotation); // list related??
-	nmg_vlist_to_eu(&vhead, layers[curr_layer]->s);
-	BN_FREE_VLIST(&free_hd, &vhead);
-    } else if (horizAlignment == LEFT && vertAlignment == BASELINE) {
-	bn_vlist_2string(&vhead, &free_hd, copyOfText,
-			 firstAlignmentPoint[X], firstAlignmentPoint[Y],
-			 textHeight, textRotation);
-	nmg_vlist_to_eu(&vhead, layers[curr_layer]->s);
-	BN_FREE_VLIST(&free_hd, &vhead);
-    } else if ((horizAlignment == CENTER || horizAlignment == HMIDDLE) && vertAlignment == BASELINE) {
-	double len = stringLength * textHeight;
-	firstAlignmentPoint[X] = secondAlignmentPoint[X] - cos(textRotation) * len / 2.0;
-	firstAlignmentPoint[Y] = secondAlignmentPoint[Y] - sin(textRotation) * len / 2.0;
-	bn_vlist_2string(&vhead, &free_hd, copyOfText,
-			 firstAlignmentPoint[X], firstAlignmentPoint[Y],
-			 textHeight, textRotation);
-	nmg_vlist_to_eu(&vhead, layers[curr_layer]->s);
-	BN_FREE_VLIST(&free_hd, &vhead);
-    } else if ((horizAlignment == CENTER || horizAlignment == HMIDDLE) && vertAlignment == VMIDDLE) {
-	double len = stringLength * textHeight;
-	firstAlignmentPoint[X] = secondAlignmentPoint[X] - len / 2.0;
-	firstAlignmentPoint[Y] = secondAlignmentPoint[Y] - textHeight / 2.0;
-	firstAlignmentPoint[X] = firstAlignmentPoint[X] - (1.0 - cos(textRotation)) * len / 2.0;
-	firstAlignmentPoint[Y] = firstAlignmentPoint[Y] - sin(textRotation) * len / 2.0;
-	bn_vlist_2string(&vhead, &free_hd, copyOfText,
-			 firstAlignmentPoint[X], firstAlignmentPoint[Y],
-			 textHeight, textRotation);
-	nmg_vlist_to_eu(&vhead, layers[curr_layer]->s);
-	BN_FREE_VLIST(&free_hd, &vhead);
-    } else if (horizAlignment == RIGHT && vertAlignment == BASELINE) {
-	double len = stringLength * textHeight;
-	firstAlignmentPoint[X] = secondAlignmentPoint[X] - cos(textRotation) * len;
-	firstAlignmentPoint[Y] = secondAlignmentPoint[Y] - sin(textRotation) * len;
-	bn_vlist_2string(&vhead, &free_hd, copyOfText,
-			 firstAlignmentPoint[X], firstAlignmentPoint[Y],
-			 textHeight, textRotation);
-	nmg_vlist_to_eu(&vhead, layers[curr_layer]->s);
-	BN_FREE_VLIST(&free_hd, &vhead);
-    } else {
-	//fprintf(stderr, "cannot handle this alignment: horiz = %d, vert = %d\n", horizAlignment, vertAlignment);
-    }
+// 	/* fit along baseline */
+// 	VSUB2(diff, firstAlignmentPoint, secondAlignmentPoint);
+// 	allowedLength = MAGNITUDE(diff);
+// 	xScale = allowedLength / stringLength;
+// 	yScale = textHeight;
+// 	scale = xScale < yScale ? xScale : yScale;
+// 	bn_vlist_2string(&vhead, &free_hd, copyOfText,
+// 			 firstAlignmentPoint[X], firstAlignmentPoint[Y],
+// 			 scale, textRotation); // list related??
+// 	nmg_vlist_to_eu(&vhead, layers[curr_layer]->s);
+// 	BN_FREE_VLIST(&free_hd, &vhead);
+//     } else if (horizAlignment == LEFT && vertAlignment == BASELINE) {
+// 	bn_vlist_2string(&vhead, &free_hd, copyOfText,
+// 			 firstAlignmentPoint[X], firstAlignmentPoint[Y],
+// 			 textHeight, textRotation);
+// 	nmg_vlist_to_eu(&vhead, layers[curr_layer]->s);
+// 	BN_FREE_VLIST(&free_hd, &vhead);
+//     } else if ((horizAlignment == CENTER || horizAlignment == HMIDDLE) && vertAlignment == BASELINE) {
+// 	double len = stringLength * textHeight;
+// 	firstAlignmentPoint[X] = secondAlignmentPoint[X] - cos(textRotation) * len / 2.0;
+// 	firstAlignmentPoint[Y] = secondAlignmentPoint[Y] - sin(textRotation) * len / 2.0;
+// 	bn_vlist_2string(&vhead, &free_hd, copyOfText,
+// 			 firstAlignmentPoint[X], firstAlignmentPoint[Y],
+// 			 textHeight, textRotation);
+// 	nmg_vlist_to_eu(&vhead, layers[curr_layer]->s);
+// 	BN_FREE_VLIST(&free_hd, &vhead);
+//     } else if ((horizAlignment == CENTER || horizAlignment == HMIDDLE) && vertAlignment == VMIDDLE) {
+// 	double len = stringLength * textHeight;
+// 	firstAlignmentPoint[X] = secondAlignmentPoint[X] - len / 2.0;
+// 	firstAlignmentPoint[Y] = secondAlignmentPoint[Y] - textHeight / 2.0;
+// 	firstAlignmentPoint[X] = firstAlignmentPoint[X] - (1.0 - cos(textRotation)) * len / 2.0;
+// 	firstAlignmentPoint[Y] = firstAlignmentPoint[Y] - sin(textRotation) * len / 2.0;
+// 	bn_vlist_2string(&vhead, &free_hd, copyOfText,
+// 			 firstAlignmentPoint[X], firstAlignmentPoint[Y],
+// 			 textHeight, textRotation);
+// 	nmg_vlist_to_eu(&vhead, layers[curr_layer]->s);
+// 	BN_FREE_VLIST(&free_hd, &vhead);
+//     } else if (horizAlignment == RIGHT && vertAlignment == BASELINE) {
+// 	double len = stringLength * textHeight;
+// 	firstAlignmentPoint[X] = secondAlignmentPoint[X] - cos(textRotation) * len;
+// 	firstAlignmentPoint[Y] = secondAlignmentPoint[Y] - sin(textRotation) * len;
+// 	bn_vlist_2string(&vhead, &free_hd, copyOfText,
+// 			 firstAlignmentPoint[X], firstAlignmentPoint[Y],
+// 			 textHeight, textRotation);
+// 	nmg_vlist_to_eu(&vhead, layers[curr_layer]->s);
+// 	BN_FREE_VLIST(&free_hd, &vhead);
+//     } else {
+// 	//fprintf(stderr, "cannot handle this alignment: horiz = %d, vert = %d\n", horizAlignment, vertAlignment);
+//     }
 
-    free(copyOfText);
-}
+//     free(copyOfText);
+// }
 
 
 void
@@ -2223,7 +2241,7 @@ drawMtext(char *text, int attachPoint, int UNUSED(drawingDirection), double text
     int maxLineLen = 0;
     double scale = 1.0;
     double xdel = 0.0, ydel = 0.0;
-    double radians = degToRad(rotationAngle);
+    double radians = rotationAngle * DEG2RAD;
     char *copyOfText = (char *)alloc((unsigned int)strlen(text)+1, 1, "copyOfText");
 
     BU_LIST_INIT(&vhead);
@@ -2506,7 +2524,7 @@ process_mtext_entities_code(int code)
 	    coord = (code / 10) - 1;
 	    xAxisDirection[coord] = atof(line);
 	    if (code == 31) {
-		rotationAngle = radToDeg(atan2(xAxisDirection[Y], xAxisDirection[X]));
+		rotationAngle = atan2(xAxisDirection[Y], xAxisDirection[X]) * RAD2DEG;
 	    }
 	    break;
 	case 40:
@@ -2833,8 +2851,8 @@ process_arc_entities_code(int code)
 
 	    /* calculate arc at origin first */
 	    //num_segs = (end_angle - start_angle) / 360.0 * segs_per_circle;
-		start_angle = degToRad(start_angle);
-	    end_angle = degToRad(end_angle);
+		start_angle *= DEG2RAD;
+	    end_angle *= DEG2RAD;
 	    // if (verbose) {
 		// fprintf(stderr, "arc has %d segs\n", num_segs);
 	    // }
@@ -3361,7 +3379,7 @@ readcodes()
 int
 main(int argc, char *argv[])
 {
-    struct bu_list head_all;
+    std::list<uint32_t> head_all;
     size_t name_len;
     char *ptr1, *ptr2;
     int code;
