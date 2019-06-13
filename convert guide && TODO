@@ -1,0 +1,27 @@
+Tips:
+1: off_t is standard, mat_t is a double[16], vect_t is a double[4] and bu_vls is a string (can be replaced with any number of string options (e.g., std::string if you switch to c++)
+2: those are basic containers, can directly convert to std:: containers, converted to C struct containers, or left alone and carry the functions it's using along
+3: those all can directly convert to stdlib functions (calloc, malloc, realloc, ftell)
+4: bu_log == fprintf(stderr
+brlcad
+5: nmg is our generalized polygonal format (e.g., a quad or a 12-sided polygon), probably not relevant to you.  triangle meshes are handled via a different container, far more simple
+6: suggest just tackling on at a time, especially given info on 1-5, maybe it will seem more obvious in that context.
+7. std::set, std::map
+8. std::vector ? std::list ?
+TO DO List:
+
+checked * Clean up all the unnessecery code like bu_log(), nmg
+checked * Switch all data type as much as possible
+checked * replicate and modified functions if needed from dependency if possible or write a new one
+checked ** vmath.h
+checked ** mat.h
+checked ** color.h
+checked * Switch up some functions that can be directly converted to std function like strncmp()
+* complete convert bu_list
+* complete convert bu_vertex
+* complete convert vls to std::string? but there are lot of functions and memory allocation stuff
+checked * Defining DEG2RAD M_PI, other values that needed defined else where etc
+* complete convert bu_ptbl
+* What to do with nurb.h dependency?
+* Fix all bu_alloc(), bu_malloc, bu_realloc(), bu_calloc()
+* Rerange main() function (More details needed)

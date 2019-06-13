@@ -55,6 +55,8 @@
 /* private headers */
 #include "./dxf.h"
 
+#define DEG2RAD 
+
 /* replicated code from vmath.h to avoid dependency */
 #define X       0
 #define Y       1
@@ -103,6 +105,8 @@
                         MAT_DELTAS(_m, (_v)[X], (_v)[Y], (_v)[Z] )
 #define MAGSQ(a)  ( (a)[X]*(a)[X] + (a)[Y]*(a)[Y] + (a)[Z]*(a)[Z] )
 #define NEAR_ZERO(val,epsilon)  ( ((val) > -epsilon) && ((val) < epsilon) )
+#define ZERO(val) NEAR_ZERO((val), SMALL_FASTF)
+#define SMALL_FASTF           1.0e-77 /* Anything smaller is zero */
 #define VCROSS(a,b,c)   { \
                         (a)[X] = (b)[Y] * (c)[Z] - (b)[Z] * (c)[Y];\
                         (a)[Y] = (b)[Z] * (c)[X] - (b)[X] * (c)[Z];\
@@ -169,6 +173,7 @@
 //     size_t blen;      /**< # of (long *)'s worth of storage at *buffer */
 //     long **buffer;    /**< data storage area */
 // };
+
 static int overstrikemode = 0;
 static int underscoremode = 0;
 
@@ -383,6 +388,112 @@ static double units_conv[]={
     /* 20 */ 3.085678e+19
 };
 
+/* replicated code from mat.h to avoid dependency */
+void
+bn_mat_angles(
+    register double *mat,
+    double alpha_in,
+    double beta_in,
+    double ggamma_in)
+{
+    double alpha, beta, ggamma;
+    double calpha, cbeta, cgamma;
+    double salpha, sbeta, sgamma;
+
+    if (NEAR_ZERO(alpha_in, 0.0) && NEAR_ZERO(beta_in, 0.0) && NEAR_ZERO(ggamma_in, 0.0)) {
+        MAT_IDN(mat);
+        return;
+    }
+
+    alpha = alpha_in * DEG2RAD;
+    beta = beta_in * DEG2RAD;
+    ggamma = ggamma_in * DEG2RAD;
+
+    calpha = cos(alpha);
+    cbeta = cos(beta);
+    cgamma = cos(ggamma);
+
+    /* sine of "180*DEG2RAD" will not be exactly zero and will
+     * result in errors when some codes try to convert this back to
+     * azimuth and elevation.  do_frame() uses this technique!!!
+     */
+    if (ZERO(alpha_in - 180.0)) {
+        salpha = 0.0;
+    } else {
+        salpha = sin(alpha);
+    }
+
+    if (ZERO(beta_in - 180.0)) {
+        sbeta = 0.0;
+    } else {
+        sbeta = sin(beta);
+    }
+
+    if (ZERO(ggamma_in - 180.0)) {
+        sgamma = 0.0;
+    } else {
+        sgamma = sin(ggamma);
+    }
+
+    mat[0] = cbeta * cgamma;
+    mat[1] = -cbeta * sgamma;
+    mat[2] = sbeta;
+    mat[3] = 0.0;
+
+    mat[4] = salpha * sbeta * cgamma + calpha * sgamma;
+    mat[5] = -salpha * sbeta * sgamma + calpha * cgamma;
+    mat[6] = -salpha * cbeta;
+    mat[7] = 0.0;
+
+    mat[8] = salpha * sgamma - calpha * sbeta * cgamma;
+    mat[9] = salpha * cgamma + calpha * sbeta * sgamma;
+    mat[10] = calpha * cbeta;
+    mat[11] = 0.0;
+    mat[12] = mat[13] = mat[14] = 0.0;
+    mat[15] = 1.0;
+}
+void
+bn_mat_mul(register double o[16], register const double a[16], register const double b[16])
+{
+    o[ 0] = a[ 0] * b[ 0] + a[ 1] * b[ 4] + a[ 2] * b[ 8] + a[ 3] * b[12];
+    o[ 1] = a[ 0] * b[ 1] + a[ 1] * b[ 5] + a[ 2] * b[ 9] + a[ 3] * b[13];
+    o[ 2] = a[ 0] * b[ 2] + a[ 1] * b[ 6] + a[ 2] * b[10] + a[ 3] * b[14];
+    o[ 3] = a[ 0] * b[ 3] + a[ 1] * b[ 7] + a[ 2] * b[11] + a[ 3] * b[15];
+
+    o[ 4] = a[ 4] * b[ 0] + a[ 5] * b[ 4] + a[ 6] * b[ 8] + a[ 7] * b[12];
+    o[ 5] = a[ 4] * b[ 1] + a[ 5] * b[ 5] + a[ 6] * b[ 9] + a[ 7] * b[13];
+    o[ 6] = a[ 4] * b[ 2] + a[ 5] * b[ 6] + a[ 6] * b[10] + a[ 7] * b[14];
+    o[ 7] = a[ 4] * b[ 3] + a[ 5] * b[ 7] + a[ 6] * b[11] + a[ 7] * b[15];
+
+    o[ 8] = a[ 8] * b[ 0] + a[ 9] * b[ 4] + a[10] * b[ 8] + a[11] * b[12];
+    o[ 9] = a[ 8] * b[ 1] + a[ 9] * b[ 5] + a[10] * b[ 9] + a[11] * b[13];
+    o[10] = a[ 8] * b[ 2] + a[ 9] * b[ 6] + a[10] * b[10] + a[11] * b[14];
+    o[11] = a[ 8] * b[ 3] + a[ 9] * b[ 7] + a[10] * b[11] + a[11] * b[15];
+
+    o[12] = a[12] * b[ 0] + a[13] * b[ 4] + a[14] * b[ 8] + a[15] * b[12];
+    o[13] = a[12] * b[ 1] + a[13] * b[ 5] + a[14] * b[ 9] + a[15] * b[13];
+    o[14] = a[12] * b[ 2] + a[13] * b[ 6] + a[14] * b[10] + a[15] * b[14];
+    o[15] = a[12] * b[ 3] + a[13] * b[ 7] + a[14] * b[11] + a[15] * b[15];
+}
+
+/* added functions for list operation */
+bool block_list_is_head(block_list bl, std::list<block_list> list){
+	if(bl.block_name != list.begin()->block_name)
+		return false;
+	else if(bl.base != list.begin()->base)
+		return false;
+	else if(bl.handle != list.begin()->handle)
+		return false;
+	else if(bl.offset != list.begin()->offset)
+		return false;
+	for(auto bl_it : bl.l){
+		for(auto list_it : list.begin()->l){
+			if(bl_it  != list_it)
+				return false;
+		}
+	}
+	return true;
+}
 
 static char *
 make_brlcad_name(const char *nameline)
@@ -2026,7 +2137,8 @@ drawString(char *theText, double *firstAlignmentPoint, double *secondAlignmentPo
     struct bu_list vhead;
     int maxLineLen = 0;
 
-    BU_LIST_INIT(&vhead);
+    //BU_LIST_INIT(&vhead);
+	std::list<uint32_t> vhead;
 
     copyOfText = (char *)alloc((unsigned int)strlen(theText)+1, 1, "copyOfText"); //bu_calloc
     c = theText;
@@ -3126,79 +3238,79 @@ process_thumbnail_code(int code)
 /*
  * Create a sketch object based on the wire edges in an NMG
  */
-static struct rt_sketch_internal *
-nmg_wire_edges_to_sketch(struct model *m)
-{
-    struct rt_sketch_internal *skt;
-    struct bu_ptbl segs;
-    struct nmgregion *r;
-    struct shell *s;
-    struct edgeuse *eu;
-    struct vertex *v;
-    struct bn_vert_tree *tree;
-    size_t idx;
-    malloc(skt);
-    skt->magic = RT_SKETCH_INTERNAL_MAGIC;
-    VSET(skt->V, 0.0, 0.0, 0.0);
-    VSET(skt->u_vec, 1.0, 0.0, 0.0);
-    VSET(skt->v_vec, 0.0, 1.0, 0.0);
+// static struct rt_sketch_internal *
+// nmg_wire_edges_to_sketch(struct model *m)
+// {
+//     struct rt_sketch_internal *skt;
+//     struct bu_ptbl segs;
+//     struct nmgregion *r;
+//     struct shell *s;
+//     struct edgeuse *eu;
+//     struct vertex *v;
+//     struct bn_vert_tree *tree;
+//     size_t idx;
+//     malloc(skt);
+//     skt->magic = RT_SKETCH_INTERNAL_MAGIC;
+//     VSET(skt->V, 0.0, 0.0, 0.0);
+//     VSET(skt->u_vec, 1.0, 0.0, 0.0);
+//     VSET(skt->v_vec, 0.0, 1.0, 0.0);
 
-    tree = bn_vert_tree_create();
-    bu_ptbl_init(&segs, 64, "segs for sketch");
-    for (BU_LIST_FOR(r, nmgregion, &m->r_hd)) {
-	for (BU_LIST_FOR(s, shell, &r->s_hd)) {
-	    struct edgeuse *eu1;
+//     tree = bn_vert_tree_create();
+//     bu_ptbl_init(&segs, 64, "segs for sketch");
+//     for (BU_LIST_FOR(r, nmgregion, &m->r_hd)) {
+// 	for (BU_LIST_FOR(s, shell, &r->s_hd)) {
+// 	    struct edgeuse *eu1;
 
-	    /* add a line segment for each wire edge */
-	    bu_ptbl_reset(&segs);
-	    eu1 = NULL;
-	    for (BU_LIST_FOR(eu, edgeuse, &s->eu_hd)) {
-		struct line_seg * lseg;
-		if (eu == eu1) {
-		    continue;
-		} else {
-		    eu1 = eu->eumate_p;
-		}
-		malloc(lseg);
-		lseg->magic = CURVE_LSEG_MAGIC;
-		v = eu->vu_p->v_p;
-		lseg->start = bn_vert_tree_add(tree, V3ARGS(v->vg_p->coord), tol_sq);
-		v = eu->eumate_p->vu_p->v_p;
-		lseg->end = bn_vert_tree_add(tree, V3ARGS(v->vg_p->coord), tol_sq);
-		if (verbose) {
-		    fprintf(stderr, "making sketch line seg from #%d (%g %g %g) to #%d (%g %g %g)\n",
-			   lseg->start, V3ARGS(&tree->the_array[lseg->start]),
-			   lseg->end, V3ARGS(&tree->the_array[lseg->end]));
-		}
-		bu_ptbl_ins(&segs, (long int *)lseg);
-	    }
-	}
-    }
+// 	    /* add a line segment for each wire edge */
+// 	    bu_ptbl_reset(&segs);
+// 	    eu1 = NULL;
+// 	    for (BU_LIST_FOR(eu, edgeuse, &s->eu_hd)) {
+// 		struct line_seg * lseg;
+// 		if (eu == eu1) {
+// 		    continue;
+// 		} else {
+// 		    eu1 = eu->eumate_p;
+// 		}
+// 		malloc(lseg);
+// 		lseg->magic = CURVE_LSEG_MAGIC;
+// 		v = eu->vu_p->v_p;
+// 		lseg->start = bn_vert_tree_add(tree, V3ARGS(v->vg_p->coord), tol_sq);
+// 		v = eu->eumate_p->vu_p->v_p;
+// 		lseg->end = bn_vert_tree_add(tree, V3ARGS(v->vg_p->coord), tol_sq);
+// 		if (verbose) {
+// 		    fprintf(stderr, "making sketch line seg from #%d (%g %g %g) to #%d (%g %g %g)\n",
+// 			   lseg->start, V3ARGS(&tree->the_array[lseg->start]),
+// 			   lseg->end, V3ARGS(&tree->the_array[lseg->end]));
+// 		}
+// 		bu_ptbl_ins(&segs, (long int *)lseg);
+// 	    }
+// 	}
+//     }
 
-    if (BU_PTBL_LEN(&segs) < 1) {
-	free(skt); //"rt_sketch_internal");
-	return NULL;
-    }
-    skt->vert_count = tree->curr_vert;
-    skt->verts = (point2d_t *)malloc(skt->vert_count * sizeof(point2d_t));//, "skt->verts");
-    for (idx = 0 ; idx < tree->curr_vert ; idx++) {
-	skt->verts[idx][0] = tree->the_array[idx*3];
-	skt->verts[idx][1] = tree->the_array[idx*3 + 1];
-    }
-    skt->curve.count = BU_PTBL_LEN(&segs);
-    skt->curve.reverse = (int *)realloc(skt->curve.reverse, skt->curve.count * sizeof (int), "curve segment reverse");
-    memset(skt->curve.reverse, 0, skt->curve.count * sizeof (int));
-    skt->curve.segment = (void **)realloc(skt->curve.segment, skt->curve.count * sizeof (void *), "curve segments");
-    for (idx = 0; idx < BU_PTBL_LEN(&segs); idx++) {
-	void *ptr = BU_PTBL_GET(&segs, idx);
-	skt->curve.segment[idx] = ptr;
-    }
+//     if (BU_PTBL_LEN(&segs) < 1) {
+// 	free(skt); //"rt_sketch_internal");
+// 	return NULL;
+//     }
+//     skt->vert_count = tree->curr_vert;
+//     skt->verts = (point2d_t *)malloc(skt->vert_count * sizeof(point2d_t));//, "skt->verts");
+//     for (idx = 0 ; idx < tree->curr_vert ; idx++) {
+// 	skt->verts[idx][0] = tree->the_array[idx*3];
+// 	skt->verts[idx][1] = tree->the_array[idx*3 + 1];
+//     }
+//     skt->curve.count = BU_PTBL_LEN(&segs);
+//     skt->curve.reverse = (int *)realloc(skt->curve.reverse, skt->curve.count * sizeof (int), "curve segment reverse");
+//     memset(skt->curve.reverse, 0, skt->curve.count * sizeof (int));
+//     skt->curve.segment = (void **)realloc(skt->curve.segment, skt->curve.count * sizeof (void *), "curve segments");
+//     for (idx = 0; idx < BU_PTBL_LEN(&segs); idx++) {
+// 	void *ptr = BU_PTBL_GET(&segs, idx);
+// 	skt->curve.segment[idx] = ptr;
+//     }
 
-    bn_vert_tree_destroy(tree);
-    bu_ptbl_free(&segs);
+//     bn_vert_tree_destroy(tree);
+//     bu_ptbl_free(&segs);
 
-    return skt;
-}
+//     return skt;
+// }
 
 
 int
@@ -3426,21 +3538,21 @@ main(int argc, char *argv[])
 	    free((char *)BU_PTBL_GET(&layers[i]->solids, j)); //"solid_name");
 	}
 
-	if (layers[i]->m) {
-	    char name[32];
-	    struct rt_sketch_internal *skt;
+	// if (layers[i]->m) {
+	//     char name[32];
+	//     struct rt_sketch_internal *skt;
 
-	    sprintf(name, "sketch.%d", i);
-	    skt = nmg_wire_edges_to_sketch(layers[i]->m);
-	    if (skt != NULL) {
-		mk_sketch(out_fp, name, skt);
-		(void) mk_addmember(name, &head, NULL, WMOP_UNION);
-		rt_curve_free(&skt->curve);
-		if (skt->verts)
-		    free(skt->verts); //"free verts");
-		free(skt);// "free sketch");
-	    }
-	}
+	//     sprintf(name, "sketch.%d", i);
+	//     skt = nmg_wire_edges_to_sketch(layers[i]->m);
+	//     if (skt != NULL) {
+	// 	mk_sketch(out_fp, name, skt);
+	// 	(void) mk_addmember(name, &head, NULL, WMOP_UNION);
+	// 	rt_curve_free(&skt->curve);
+	// 	if (skt->verts)
+	// 	    free(skt->verts); //"free verts");
+	// 	free(skt);// "free sketch");
+	//     }
+	// }
 
 	if (layers[i]->line_count) {
 	    fprintf(stderr, "\t%zu lines\n", layers[i]->line_count);
@@ -3533,24 +3645,6 @@ main(int argc, char *argv[])
     }
 
     return 0;
-}
-
-bool block_list_is_head(block_list bl, std::list<block_list> list){
-	if(bl.block_name != list.begin()->block_name)
-		return false;
-	else if(bl.base != list.begin()->base)
-		return false;
-	else if(bl.handle != list.begin()->handle)
-		return false;
-	else if(bl.offset != list.begin()->offset)
-		return false;
-	for(auto bl_it : bl.l){
-		for(auto list_it : list.begin()->l){
-			if(bl_it  != list_it)
-				return false;
-		}
-	}
-	return true;
 }
 
 /*
