@@ -2230,7 +2230,7 @@ void
 drawMtext(char *text, int attachPoint, int UNUSED(drawingDirection), double textHeight, double entityHeight,
 	  double charWidth, double UNUSED(rectWidth), double rotationAngle, double insertionPoint[3])
 {
-    struct bu_list vhead;
+    std::list<uint32_t> vhead;
     int done;
     char *c;
     char *cp;
@@ -2244,7 +2244,7 @@ drawMtext(char *text, int attachPoint, int UNUSED(drawingDirection), double text
     double radians = rotationAngle * DEG2RAD;
     char *copyOfText = (char *)alloc((unsigned int)strlen(text)+1, 1, "copyOfText");
 
-    BU_LIST_INIT(&vhead);
+    //BU_LIST_INIT(&vhead);
 
     c = text;
     cp = copyOfText;
@@ -2736,14 +2736,14 @@ process_dimension_entities_code(int code)
 		// if (verbose) {
 		//     fprintf(stderr, "Created a new state for DIMENSION\n");
 		// }
-		for (BU_LIST_FOR(blk, block_list, &block_head)) {
+		for (auto blk : block_head) {//BU_LIST_FOR(blk, block_list, &block_head)
 		    if (block_name) {
-			if (0 != strcmp(blk->block_name, block_name)) {
-			    break;
-			}
+				if (0 != strcmp(blk.block_name, block_name)) {
+					break;
+				}
 		    }
 		}
-		if (BU_LIST_IS_HEAD(blk, &block_head)) {
+		if (block_list_is_head(*blk, block_head)) {
 		    // fprintf(stderr, "ERROR: DIMENSION references non-existent block (%s)\n", block_name);
 		    // fprintf(stderr, "\tignoring missing block\n");
 		    blk = NULL;
@@ -2758,7 +2758,8 @@ process_dimension_entities_code(int code)
 		}
 
 		if (new_state->curr_block) {
-		    BU_LIST_PUSH(&state_stack, &(curr_state->l));
+		    //BU_LIST_PUSH(&state_stack, &(curr_state->l)); place the item at the tail of the list
+			state_stack.push_back(*curr_state);
 		    curr_state = new_state;
 		    new_state = NULL;
 		    fseek(dxf, curr_state->curr_block->offset, SEEK_SET);
@@ -3455,8 +3456,9 @@ main(int argc, char *argv[])
 
     mk_id(out_fp, base_name);
 
-    BU_LIST_INIT(&block_head);
-    BU_LIST_INIT(&free_hd);
+    // BU_LIST_INIT(&block_head);
+    // BU_LIST_INIT(&free_hd);
+	std::list<block_list> block_head;
 
     process_code[UNKNOWN_SECTION] = process_unknown_code;
     process_code[HEADER_SECTION] = process_header_code;
@@ -3497,7 +3499,8 @@ main(int argc, char *argv[])
     }
 
     /* initialize state stack */
-    BU_LIST_INIT(&state_stack);
+    //BU_LIST_INIT(&state_stack);
+	std::list<state_data> state_stack
 
     /* create initial state */
     BU_ALLOC(curr_state, struct state_data);//BU_ALLOC
@@ -3526,12 +3529,14 @@ main(int argc, char *argv[])
 	process_code[curr_state->state](code);
     }
 
-    BU_LIST_INIT(&head_all);
+    //BU_LIST_INIT(&head_all);
+
     for (i = 0; i < next_layer; i++) {
-	struct bu_list head;
+	//struct bu_list head;
+	std::list<uint32_t> head;
 	size_t j;
 
-	BU_LIST_INIT(&head);
+	//BU_LIST_INIT(&head);
 
 	if (layers[i]->color_number < 0)
 	    layers[i]->color_number = 7;
@@ -3632,7 +3637,7 @@ main(int argc, char *argv[])
 	}
 
 
-	if (BU_LIST_NON_EMPTY(&head)) {
+	if (!head.empty()) {//BU_LIST_NON_EMPTY(&head)
 	    unsigned char *tmp_rgb;
 	    char *comb_name = BU_VLS_INIT_ZERO;
 
@@ -3648,7 +3653,7 @@ main(int argc, char *argv[])
 
     }
 
-    if (BU_LIST_NON_EMPTY(&head_all)) {
+    if (!head_all.empty()) {//BU_LIST_NON_EMPTY(&head_all)
 	char *top_name = BU_VLS_INIT_ZERO; // variable length string??
 	int count = 0;
 

@@ -19,11 +19,11 @@ checked ** mat.h
 checked ** color.h
 checked * Switch up some functions that can be directly converted to std function like strncmp()
 checked * Defining DEG2RAD M_PI, other values that needed defined else where etc
-* complete convert bu_list
+checked * complete convert bu_list
 * complete convert bu_vertex
 * complete convert vls to std::string? but there are lot of functions and memory allocation stuff
 * fix bu_get, bu_optget, put function.
-* fix mk_  wdb_ hierarchy function.
+* fix mk_  wdb_ inheritance function.
 * complete convert bu_ptbl
 * What to do with nurb.h dependency?
 * Fix all bu_alloc(), bu_malloc, bu_realloc(), bu_calloc()
@@ -32,8 +32,13 @@ checked * Defining DEG2RAD M_PI, other values that needed defined else where etc
 Question:
 
 * M_2PI is 2 * M_PI or M_2_PI ?
-* UNUSED(textScale) UNUSED(textFlag) what to do with these ? 
+* UNUSED(textScale) UNUSED(textFlag) what to do with these ?
+* wdb.h write data base, do we need it?
+* Do we need drawMtext, drawstring functions??
 
-Note: 
+Development Note: 
 
+* Replaced state_stack with std::list<state_data> state_stack
+* Replaced block_list with std::list<block_list> block_head
 * bu_list_init as a circular list without allocating memory.
+* I am currently ignored all the bu_list_init.
