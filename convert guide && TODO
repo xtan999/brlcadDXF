@@ -1,4 +1,4 @@
-Tips:
+Convert Tips:
 1: fastf_t is double, point_t is double[3], off_t is standard, mat_t is a double[16], vect_t is a double[4] and bu_vls is a string (can be replaced with any number of string options (e.g., std::string if you switch to c++)
 2: those are basic containers, can directly convert to std:: containers, converted to C struct containers, or left alone and carry the functions it's using along
 3: those all can directly convert to stdlib functions (calloc, malloc, realloc, ftell)
@@ -41,4 +41,4 @@ Development Note:
 * Replaced state_stack with std::list<state_data> state_stack
 * Replaced block_list with std::list<block_list> block_head
 * bu_list_init as a circular list without allocating memory.
-* I am currently ignored all the bu_list_init.
+* Currently, I am ignoring all the bu_list_init().
