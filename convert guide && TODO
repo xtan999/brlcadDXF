@@ -22,11 +22,12 @@ checked * Defining DEG2RAD M_PI, other values that needed defined else where etc
 checked * complete convert bu_list
 checked * complete convert bn_vert_tree
 * complete convert vls to std::string? but there are lot of functions and memory allocation stuff
-* fix bu_get, bu_optget, put function.
+* fix bu_get, bu_optget, bu_put function.
 * fix mk_  wdb_ inheritance function.
 * complete convert bu_ptbl
 * What to do with nurb.h dependency?
-* Fix all bu_alloc(), bu_malloc, bu_realloc(), bu_calloc()
+checked * Fix all bu_alloc(), bu_malloc, bu_realloc(), bu_calloc() 
+  except circle_pts has a error expression must be a modifiable lvalue
 * Rerange main() function (More details needed)
 
 Question:
@@ -35,6 +36,8 @@ Question:
 * UNUSED(textScale) UNUSED(textFlag) what to do with these ?
 * wdb.h write data base, do we need it?
 * Do we need drawMtext, drawstring functions??
+* EQUAL() what is this different than a == b ? can't find def
+
 
 Development Note: 
 
@@ -53,3 +56,5 @@ Development Note:
 * Replaced bu_bomb with fprintf(stderr, )
 * Could not find the def for VINI_ZERO just replace it by simply inilizing the double[4]
   all equals 0 by guessing.
+* Added a NEAR_EQUAL function for the undefined NEAR_EQAUL, replace EQUAL() with ==
+* replaced both bu_malloc and bu_ALLOC with malloc()

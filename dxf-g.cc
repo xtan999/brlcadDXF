@@ -211,13 +211,14 @@ struct vert_root {
 struct vert_root *create_vert_tree(void){
 	struct vert_root *tree;
 
-	BU_ALLOC(tree, struct vert_root);
+	//malloc(sizeof(tree), struct vert_root);
+	malloc(sizeof(tree));
 	tree->magic = VERT_TREE_MAGIC;
 	tree->tree_type = TREE_TYPE_VERTS;
 	tree->the_tree = (union vert_tree *)NULL;
 	tree->curr_vert = 0;
 	tree->max_vert = VERT_BLOCK;
-	tree->the_array = (double *)bu_malloc( tree->max_vert * 3 * sizeof( double ), "vert tree array" );
+	tree->the_array = (double *)malloc( tree->max_vert * 3 * sizeof( double ));
 
 	return tree;
 }
@@ -239,22 +240,6 @@ union vert_tree {
 /* types for the above "vert_tree" */
 #define VERT_LEAF       'l'
 #define VERT_NODE       'n'
-
-struct vert_root *
-create_vert_tree(void)
-{
-    struct vert_root *tree;
-
-    BU_ALLOC(tree, struct vert_root);
-    tree->magic = VERT_TREE_MAGIC;
-    tree->tree_type = TREE_TYPE_VERTS;
-    tree->the_tree = (union vert_tree *)NULL;
-    tree->curr_vert = 0;
-    tree->max_vert = VERT_BLOCK;
-    tree->the_array = (double *)bu_malloc( tree->max_vert * 3 * sizeof( double ), "vert tree array" );
-
-    return tree;
-}
 
 int
 Add_vert( double x, double y, double z, struct vert_root *vert_root, double local_tol_sq )
@@ -305,14 +290,14 @@ Add_vert( double x, double y, double z, struct vert_root *vert_root, double loca
         /* allocate more memory for vertices */
         vert_root->max_vert += VERT_BLOCK;
 
-        vert_root->the_array = (double *)bu_realloc( vert_root->the_array, sizeof( double ) * vert_root->max_vert * 3,
-                                                      "vert_root->the_array" );
+        vert_root->the_array = (double *)realloc( vert_root->the_array, sizeof( double ) * vert_root->max_vert * 3);
     }
 
     VMOVE( &vert_root->the_array[vert_root->curr_vert*3], vertex );
 
     /* add to the tree also */
-    BU_ALLOC(new_leaf, union vert_tree);
+    //BU_ALLOC(new_leaf, union vert_tree);
+	malloc(sizeof(new_leaf));
     new_leaf->vleaf.type = VERT_LEAF;
     new_leaf->vleaf.index = vert_root->curr_vert++;
     if ( !vert_root->the_tree ) {
@@ -320,7 +305,8 @@ Add_vert( double x, double y, double z, struct vert_root *vert_root, double loca
         vert_root->the_tree = new_leaf;
     } else if ( ptr && ptr->type == VERT_LEAF ) {
         /* search above ended at a leaf, need to add a node above this leaf and the new leaf */
-        BU_ALLOC(new_node, union vert_tree);
+        //BU_ALLOC(new_node, union vert_tree);
+		malloc(sizeof(new_node));
         new_node->vnode.type = VERT_NODE;
 
         /* select the cutting coord based on the biggest difference */
@@ -703,6 +689,15 @@ bool block_list_is_head(block_list bl, std::list<block_list> list){
 	return true;
 }
 
+/* function for undefined NEAR_EQUAL */
+bool NEAR_EQUAL(double a, double b, double local_tol_sql){
+	double diff = fabs(a - b);
+	if(diff <= local_tol_sql){
+		return true;
+	}
+	return false;
+}
+
 static char *
 make_brlcad_name(const char *nameline)
 {
@@ -758,7 +753,7 @@ get_layer()
 	    max_layers += 5;
 	    layers = (struct layer **)realloc(layers, max_layers*sizeof(struct layer *));
 	    for (i = 0; i < 5; i++) {
-		malloc(layers[max_layers-i-1]); //bu_alloc
+		malloc(sizeof(layers[max_layers-i-1])); //bu_alloc
 	    }
 	}
 	curr_layer = next_layer++;
@@ -1073,7 +1068,7 @@ process_blocks_code(int code)
 	    } else if (!strncmp(line, "BLOCK", 5)) {
 		/* start of a new block */
 
-		malloc(curr_block);
+		malloc(sizeof(curr_block));
 		curr_block->offset = ftell(dxf); // dxf file stream ??
 		block_head.push_front(*curr_block);
 		// BU_LIST_INSERT(&(block_head), &(curr_block->l)); //Insert "new" item in front of "old" item.  block_head is the head of the list.
@@ -1592,7 +1587,7 @@ process_insert_entities_code(int code)
 
     if (!new_state) {
 	insert_init(&ins);
-	malloc(new_state);
+	malloc(sizeof(new_state));
 	*new_state = *curr_state;
 	if (verbose) {
 	    fprintf(stderr, "Created a new state for INSERT\n");
@@ -2074,12 +2069,12 @@ process_ellipse_entities_code(int code)
 		r0 = majorRadius * cos(angle);
 		r1 = minorRadius * sin(angle);
 		VJOIN2(p1, center, r0, xdir, r1, ydir);
-		if (EQUAL(angle, startAngle)) {
+		if (angle == startAngle) {//EQUAL(angle, startAngle)
 		    VMOVE(p0, p1);
 		    angle += delta;
 		    continue;
 		}
-		if (fullCircle && EQUAL(angle, endAngle)) {
+		if (fullCircle && angle == startAngle) {//EQUAL(angle, endAngle)
 		    v2 = v0;
 		}
 		// eu = nmg_me(v1, v2, layers[curr_layer]->s);
@@ -2433,7 +2428,7 @@ drawMtext(char *text, int attachPoint, int UNUSED(drawingDirection), double text
     double scale = 1.0;
     double xdel = 0.0, ydel = 0.0;
     double radians = rotationAngle * DEG2RAD;
-    char *copyOfText = (char *)alloc((unsigned int)strlen(text)+1, 1, "copyOfText");
+    char *copyOfText = (char *)calloc((unsigned int)strlen(text)+1, 1);
 
     //BU_LIST_INIT(&vhead);
 
@@ -2922,7 +2917,7 @@ process_dimension_entities_code(int code)
 	    if (block_name != NULL) {
 		/* insert this dimension block */
 		get_layer();
-		malloc(new_state); // bu_alloc
+		malloc(sizeof(new_state)); // bu_alloc
 		*new_state = *curr_state;
 		// if (verbose) {
 		//     fprintf(stderr, "Created a new state for DIMENSION\n");
@@ -3645,7 +3640,7 @@ main(int argc, char *argv[])
     else
 	name_len = ptr2 - ptr1;
 
-    base_name = (char *)alloc((unsigned int)name_len + 1, 1, "base_name");
+    base_name = (char *)calloc((unsigned int)name_len + 1, 1);
     strlcpy(base_name , ptr1 , name_len+1);
 
     mk_id(out_fp, base_name);
@@ -3687,17 +3682,18 @@ main(int argc, char *argv[])
     process_tables_sub_code[LAYER_TABLE_STATE] = process_tables_layer_code;
 
     /* create storage for circles */
-    circle_pts = (double *)alloc(segs_per_circle, sizeof(double), "circle_pts");
+    circle_pts = (double *)calloc(segs_per_circle, sizeof(double)*3);
     for (i = 0; i < segs_per_circle; i++) {
 	VSETALL(circle_pts[i], 0.0);
     }
 
     /* initialize state stack */
     //BU_LIST_INIT(&state_stack);
-	std::list<state_data> state_stack
+	std::list<state_data> state_stack;
 
     /* create initial state */
-    BU_ALLOC(curr_state, struct state_data);//BU_ALLOC
+    //BU_ALLOC(curr_state, struct state_data);//BU_ALLOC
+	malloc(sizeof(curr_state));
     curr_state->file_offset = 0;
     curr_state->state = UNKNOWN_SECTION;
     curr_state->sub_state = UNKNOWN_ENTITY_STATE;
@@ -3709,7 +3705,7 @@ main(int argc, char *argv[])
     curr_layer = 0;
     layers = (struct layer **)alloc(5, sizeof(struct layer *), "layers");
     for (i = 0; i < max_layers; i++) {
-	BU_ALLOC(layers[i], struct layer);
+	malloc(sizeof(layers[i]));
     }
     layers[0]->name = strdup("noname");
     layers[0]->color_number = 7;	/* default white */
