@@ -1,4 +1,4 @@
-Convert Tips:
+Tips:
 1: fastf_t is double, point_t is double[3], off_t is standard, mat_t is a double[16], vect_t is a double[4] and bu_vls is a string (can be replaced with any number of string options (e.g., std::string if you switch to c++)
 2: those are basic containers, can directly convert to std:: containers, converted to C struct containers, or left alone and carry the functions it's using along
 3: those all can directly convert to stdlib functions (calloc, malloc, realloc, ftell)
@@ -20,7 +20,7 @@ checked ** color.h
 checked * Switch up some functions that can be directly converted to std function like strncmp()
 checked * Defining DEG2RAD M_PI, other values that needed defined else where etc
 checked * complete convert bu_list
-* complete convert bu_vertex
+checked * complete convert bn_vert_tree
 * complete convert vls to std::string? but there are lot of functions and memory allocation stuff
 * fix bu_get, bu_optget, put function.
 * fix mk_  wdb_ inheritance function.
@@ -41,4 +41,15 @@ Development Note:
 * Replaced state_stack with std::list<state_data> state_stack
 * Replaced block_list with std::list<block_list> block_head
 * bu_list_init as a circular list without allocating memory.
-* Currently, I am ignoring all the bu_list_init().
+* I am currently ignored all the bu_list_init.
+* Did not replace bn_vert_tree, replicated code from vert_tree.h, vert_tree.c 
+  to avoid dependency. I think it's better to preserve the bn_vert_tree 
+  because it contains tree structure, it needs to return the index of the array.
+* Couldn't find bn_vert_tree inheritance, bn_vert_tree replaced by vert_root,
+  bn_vert_tree_create() replaced by create_vert_tree(), bn_vert_tree_add() replaced by
+  Add_vert(). Normals are not included.
+* ignored BN_CK_VERT_TREE() because it would drag in a lot of other code but this is just
+  checking if the structure is valid. Looks like it could be ignored.
+* Replaced bu_bomb with fprintf(stderr, )
+* Could not find the def for VINI_ZERO just replace it by simply inilizing the double[4]
+  all equals 0 by guessing.

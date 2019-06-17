@@ -192,34 +192,198 @@
 //     long **buffer;    /**< data storage area */
 // };
 
+/* replicated code from vert_tree.h, vert_tree.c to avoid dependency */
+#define VERT_TREE_MAGIC                 0x56455254 /**< VERT from magic.h */
+#define TREE_TYPE_VERTS 1
+#define TREE_TYPE_VERTS_AND_NORMS 2
+#define VERT_BLOCK 512                  /**< @brief number of vertices to malloc per call when building the array */ 
+#define BN_CK_VERT_TREE(_p) BU_CKMAG(_p, VERT_TREE_MAGIC, "vert_tree")
+
+struct vert_root {
+     uint32_t magic;
+     int tree_type;              /**< @brief vertices or vertices with normals */
+     union vert_tree *the_tree;  /**< @brief the actual vertex tree */
+     double *the_array;         /**< @brief the array of vertices */
+     size_t curr_vert;           /**< @brief the number of vertices currently in the array */
+     size_t max_vert;            /**< @brief the current maximum capacity of the array */
+};
+
+struct vert_root *create_vert_tree(void){
+	struct vert_root *tree;
+
+	BU_ALLOC(tree, struct vert_root);
+	tree->magic = VERT_TREE_MAGIC;
+	tree->tree_type = TREE_TYPE_VERTS;
+	tree->the_tree = (union vert_tree *)NULL;
+	tree->curr_vert = 0;
+	tree->max_vert = VERT_BLOCK;
+	tree->the_array = (double *)bu_malloc( tree->max_vert * 3 * sizeof( double ), "vert tree array" );
+
+	return tree;
+}
+
+union vert_tree {
+    char type;          /* type - leaf or node */
+    struct vert_leaf {
+        char type;
+        int index;      /* index into the array */
+    } vleaf;
+    struct vert_node {
+        char type;
+        double cut_val; /* cutting value */
+        int coord;      /* cutting coordinate */
+        union vert_tree *higher, *lower;        /* subtrees */
+    } vnode;
+};
+
+/* types for the above "vert_tree" */
+#define VERT_LEAF       'l'
+#define VERT_NODE       'n'
+
+struct vert_root *
+create_vert_tree(void)
+{
+    struct vert_root *tree;
+
+    BU_ALLOC(tree, struct vert_root);
+    tree->magic = VERT_TREE_MAGIC;
+    tree->tree_type = TREE_TYPE_VERTS;
+    tree->the_tree = (union vert_tree *)NULL;
+    tree->curr_vert = 0;
+    tree->max_vert = VERT_BLOCK;
+    tree->the_array = (double *)bu_malloc( tree->max_vert * 3 * sizeof( double ), "vert tree array" );
+
+    return tree;
+}
+
+int
+Add_vert( double x, double y, double z, struct vert_root *vert_root, double local_tol_sq )
+{
+    union vert_tree *ptr, *prev=NULL, *new_leaf, *new_node;
+    double diff[4];
+	diff[0] = 0;
+	diff[1] = 0;
+	diff[2] = 0;
+	diff[3] = 0;
+    double vertex[4];
+
+    //BN_CK_VERT_TREE( vert_root ); 
+
+    if ( vert_root->tree_type != TREE_TYPE_VERTS ) {
+        fprintf( stderr,  "Error: Add_vert() called for a tree containing vertices and normals\n" );//bu_bomb
+    }
+
+    VSET( vertex, x, y, z );
+
+    /* look for this vertex already in the list */
+    ptr = vert_root->the_tree;
+    while ( ptr ) {
+        if ( ptr->type == VERT_NODE ) {
+            prev = ptr;
+            if ( vertex[ptr->vnode.coord] >= ptr->vnode.cut_val ) {
+                ptr = ptr->vnode.higher;
+            } else {
+                ptr = ptr->vnode.lower;
+            }
+        } else {
+            int ij;
+
+            ij = ptr->vleaf.index*3;
+            diff[0] = fabs( vertex[0] - vert_root->the_array[ij] );
+            diff[1] = fabs( vertex[1] - vert_root->the_array[ij+1] );
+            diff[2] = fabs( vertex[2] - vert_root->the_array[ij+2] );
+            if ( (diff[0]*diff[0] + diff[1]*diff[1] + diff[2]*diff[2]) <= local_tol_sq ) {
+                /* close enough, use this vertex again */
+                return ptr->vleaf.index;
+            }
+            break;
+        }
+    }
+
+    /* add this vertex to the list */
+    if ( vert_root->curr_vert >= vert_root->max_vert ) {
+        /* allocate more memory for vertices */
+        vert_root->max_vert += VERT_BLOCK;
+
+        vert_root->the_array = (double *)bu_realloc( vert_root->the_array, sizeof( double ) * vert_root->max_vert * 3,
+                                                      "vert_root->the_array" );
+    }
+
+    VMOVE( &vert_root->the_array[vert_root->curr_vert*3], vertex );
+
+    /* add to the tree also */
+    BU_ALLOC(new_leaf, union vert_tree);
+    new_leaf->vleaf.type = VERT_LEAF;
+    new_leaf->vleaf.index = vert_root->curr_vert++;
+    if ( !vert_root->the_tree ) {
+        /* first vertex, it becomes the root */
+        vert_root->the_tree = new_leaf;
+    } else if ( ptr && ptr->type == VERT_LEAF ) {
+        /* search above ended at a leaf, need to add a node above this leaf and the new leaf */
+        BU_ALLOC(new_node, union vert_tree);
+        new_node->vnode.type = VERT_NODE;
+
+        /* select the cutting coord based on the biggest difference */
+        if ( diff[0] >= diff[1] && diff[0] >= diff[2] ) {
+            new_node->vnode.coord = 0;
+        } else if ( diff[1] >= diff[2] && diff[1] >= diff[0] ) {
+            new_node->vnode.coord = 1;
+        } else if ( diff[2] >= diff[1] && diff[2] >= diff[0] ) {
+            new_node->vnode.coord = 2;
+        }
+
+        /* set the cut value to the mid value between the two vertices */
+        new_node->vnode.cut_val = (vertex[new_node->vnode.coord] +
+                                   vert_root->the_array[ptr->vleaf.index * 3 + new_node->vnode.coord]) * 0.5;
+
+        /* set the node "lower" and "higher" pointers */
+        if ( vertex[new_node->vnode.coord] >=
+             vert_root->the_array[ptr->vleaf.index * 3 + new_node->vnode.coord] ) {
+            new_node->vnode.higher = new_leaf;
+            new_node->vnode.lower = ptr;
+        } else {
+            new_node->vnode.higher = ptr;
+            new_node->vnode.lower = new_leaf;
+        }
+
+        if ( ptr == vert_root->the_tree ) {
+            /* if the above search ended at the root, redefine the root */
+            vert_root->the_tree =  new_node;
+        } else {
+            /* set the previous node to point to our new one */
+            if ( prev->vnode.higher == ptr ) {
+                prev->vnode.higher = new_node;
+            } else {
+                prev->vnode.lower = new_node;
+            }
+        }
+    } else if ( ptr && ptr->type == VERT_NODE ) {
+        /* above search ended at a node, just add the new leaf */
+        prev = ptr;
+        if ( vertex[prev->vnode.coord] >= prev->vnode.cut_val ) {
+            if ( prev->vnode.higher ) {
+                fprintf( stderr, "higher vertex node already exists in Add_vert()?\n");//bu_bomb
+            }
+            prev->vnode.higher = new_leaf;
+        } else {
+            if ( prev->vnode.lower ) {
+                fprintf( stderr, "lower vertex node already exists in Add_vert()?\n");//bu_bomb
+            }
+            prev->vnode.lower = new_leaf;
+        }
+    } else {
+        fprintf( stderr, "*********ERROR********\n" );
+    }
+
+    /* return the index into the vertex array */
+    return new_leaf->vleaf.index;
+}
+
 #define DEG2RAD M_PI/180.0
-#define RAD2DEG 180.0/M_PI
+#define RAD2DEG 180.0/M_PI 	
 
 static int overstrikemode = 0;
 static int underscoremode = 0;
-
-/* vertice for vector */
-
-struct vertex {
-	double vx;
-	double vy;
-	double vz;
-	int index;
-	/* normal if needed */
-	// double nx;
-	// double ny;
-	// double nz;
-
-	/* overload operator < for set in the vertex */
-	bool operator< (const vertex v) const {
-    	bool result = true;
-		double diff[3];
-		diff[0] = vx - v.vx;
-		diff[1] = vy - v.vy;
-		diff[2] = vz - v.vz;
-		if()
-	}
-};
 
 struct insert_data {
     double scale[3];
@@ -249,8 +413,7 @@ static int color_by_layer = 0;		/* flag, if set, colors are set by layer */
 struct layer {
     char *name;			/* layer name */
     int color_number;		/* color */
-    //struct bn_vert_tree *vert_tree; /* root of vertex tree */
-	std::set<vertex> vert_tree;
+    struct vert_root *vert_tree; /* root of vertex tree */
     int *part_tris;			/* list of triangles for current part */
     size_t max_tri;			/* number of triangles currently malloced */
     size_t curr_tri;			/* number of triangles currently being used */
@@ -540,15 +703,6 @@ bool block_list_is_head(block_list bl, std::list<block_list> list){
 	return true;
 }
 
-/* create a vertex */
-vertex vertex_create(double vx, double vy, double vz){
-	vertex v;
-	v.vx = vx;
-	v.vy = vy;
-	v.vz = vz;
-	return v; 
-}
-
 static char *
 make_brlcad_name(const char *nameline)
 {
@@ -618,7 +772,7 @@ get_layer()
 	     curr_state->sub_state == POLYLINE_VERTEX_ENTITY_STATE)) {
 	    layers[curr_layer]->vert_tree = layers[old_layer]->vert_tree;
 	} else {
-	    //layers[curr_layer]->vert_tree = bn_vert_tree_create(); should we allocate new memory?
+	    layers[curr_layer]->vert_tree = create_vert_tree(); //bn_vert_tree_create();
 
 	}
 	layers[curr_layer]->color_number = curr_color;
@@ -1072,8 +1226,7 @@ process_entities_polyline_vertex_code(int code)
 		VSET(tmp_pt1, x, y, z);
 		MAT4X3PNT(tmp_pt2, curr_state->xform, tmp_pt1);
 		//polyline_vert_indices[polyline_vert_indices_count++] = bn_vert_tree_add(layers[curr_layer]->vert_tree, tmp_pt2[X], tmp_pt2[Y], tmp_pt2[Z], tol_sq);
-		layers[curr_layer]->vert_tree.push_back(vertex_create(V3ARGS(tmp_pt1)));
-		polyline_vert_indices[polyline_vert_indices_count++] = 
+		polyline_vert_indices[polyline_vert_indices_count++] = Add_vert(tmp_pt2[X], tmp_pt2[Y], tmp_pt2[Z],layers[curr_layer]->vert_tree, tol_sq);
 		if (verbose) {
 		    fprintf(stderr, "Added 3D mesh vertex (%f %f %f) index = %d, number = %d\n",
 			   x, y, z, polyline_vert_indices[polyline_vert_indices_count-1],
@@ -3225,7 +3378,9 @@ process_3dface_entities_code(int code)
 		// face[vert_no] = bn_vert_tree_add(layers[curr_layer]->vert_tree,
 		// 				 V3ARGS(pts[vert_no]),
 		// 				 tol_sq);
-		face[vert_no] = layers[curr_layer]->vert_tree.push_back(vertex_create(V3ARGS(pts[vert_no])));
+		face[vert_no] = Add_vert(V3ARGS(pts[vert_no]),
+						 layers[curr_layer]->vert_tree,
+						 tol_sq);		
 	    }
 	    add_triangle(face[0], face[1], face[2], curr_layer);
 	    add_triangle(face[2], face[3], face[0], curr_layer);
@@ -3584,7 +3739,7 @@ main(int argc, char *argv[])
 	    fprintf(stderr, "LAYER: %s, color = %d (%d %d %d)\n", layers[i]->name, layers[i]->color_number, V3ARGS(&rgb[layers[i]->color_number*3]));
 	}
 
-	if (layers[i]->curr_tri && layers[i]->vert_tree.size() > 2) {
+	if (layers[i]->curr_tri && layers[i]->vert_tree->curr_vert > 2) {
 	    sprintf(tmp_name, "bot.s%d", i);
 	    // if (mk_bot(out_fp, tmp_name, RT_BOT_SURFACE, RT_BOT_UNORIENTED, 0,
 		//        layers[i]->vert_tree, layers[i]->curr_tri, layers[i]->vert_tree->the_array,
