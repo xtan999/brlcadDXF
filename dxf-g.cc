@@ -3703,7 +3703,7 @@ main(int argc, char *argv[])
     max_layers = 5;
     next_layer = 1;
     curr_layer = 0;
-    layers = (struct layer **)alloc(5, sizeof(struct layer *), "layers");
+    layers = (struct layer **)calloc(5, sizeof(struct layer *));
     for (i = 0; i < max_layers; i++) {
 	malloc(sizeof(layers[i]));
     }
