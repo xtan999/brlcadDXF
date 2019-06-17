@@ -2413,9 +2413,12 @@ convertSecretCodes(char *c, char *cp, int *maxLineLen)
 
 
 void
-drawMtext(char *text, int attachPoint, int UNUSED(drawingDirection), double textHeight, double entityHeight,
-	  double charWidth, double UNUSED(rectWidth), double rotationAngle, double insertionPoint[3])
+drawMtext(char *text, int attachPoint, int drawingDirection, double textHeight, double entityHeight,
+	  double charWidth, double rectWidth, double rotationAngle, double insertionPoint[3])
 {
+	(void)drawingDirection;
+	(void)rectWidth;
+	//Removed UNUSED()
     std::list<uint32_t> vhead;
     int done;
     char *c;
@@ -2683,10 +2686,11 @@ process_mtext_entities_code(int code)
 		ftell(vls); // what should we replace?? get()?
 		//bu_vls_init(vls);  initialize the string??
 	    }
+		std::string lstr(line);
 	    strcat(vls, line);
 	    break;
 	case 1:
-	    if (!vls) {
+	    if (!vls) {	
 		ftell(vls);
 		//bu_vls_init(vls);
 	    }

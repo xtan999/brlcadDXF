@@ -58,3 +58,4 @@ Development Note:
   all equals 0 by guessing.
 * Added a NEAR_EQUAL function for the undefined NEAR_EQAUL, replace EQUAL() with ==
 * replaced both bu_malloc and bu_ALLOC with malloc()
+* Removed UNUSED() in the drawMtext, drawString.
