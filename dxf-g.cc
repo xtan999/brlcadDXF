@@ -40,6 +40,8 @@
 #include <vector>
 #include <string>
 #include <cmath>
+#include <vector>
+#include <set>
 // #include "bio.h"
 
 /* interface headers */
@@ -196,6 +198,29 @@
 static int overstrikemode = 0;
 static int underscoremode = 0;
 
+/* vertice for vector */
+
+struct vertex {
+	double vx;
+	double vy;
+	double vz;
+	int index;
+	/* normal if needed */
+	// double nx;
+	// double ny;
+	// double nz;
+
+	/* overload operator < for set in the vertex */
+	bool operator< (const vertex v) const {
+    	bool result = true;
+		double diff[3];
+		diff[0] = vx - v.vx;
+		diff[1] = vy - v.vy;
+		diff[2] = vz - v.vz;
+		if()
+	}
+};
+
 struct insert_data {
     double scale[3];
     double rotation;
@@ -224,7 +249,8 @@ static int color_by_layer = 0;		/* flag, if set, colors are set by layer */
 struct layer {
     char *name;			/* layer name */
     int color_number;		/* color */
-    struct bn_vert_tree *vert_tree; /* root of vertex tree */
+    //struct bn_vert_tree *vert_tree; /* root of vertex tree */
+	std::set<vertex> vert_tree;
     int *part_tris;			/* list of triangles for current part */
     size_t max_tri;			/* number of triangles currently malloced */
     size_t curr_tri;			/* number of triangles currently being used */
@@ -514,6 +540,15 @@ bool block_list_is_head(block_list bl, std::list<block_list> list){
 	return true;
 }
 
+/* create a vertex */
+vertex vertex_create(double vx, double vy, double vz){
+	vertex v;
+	v.vx = vx;
+	v.vy = vy;
+	v.vz = vz;
+	return v; 
+}
+
 static char *
 make_brlcad_name(const char *nameline)
 {
@@ -583,7 +618,8 @@ get_layer()
 	     curr_state->sub_state == POLYLINE_VERTEX_ENTITY_STATE)) {
 	    layers[curr_layer]->vert_tree = layers[old_layer]->vert_tree;
 	} else {
-	    layers[curr_layer]->vert_tree = bn_vert_tree_create();
+	    //layers[curr_layer]->vert_tree = bn_vert_tree_create(); should we allocate new memory?
+
 	}
 	layers[curr_layer]->color_number = curr_color;
 	bu_ptbl_init(&layers[curr_layer]->solids, 8, "layers[curr_layer]->solids");
@@ -1035,7 +1071,9 @@ process_entities_polyline_vertex_code(int code)
 		}
 		VSET(tmp_pt1, x, y, z);
 		MAT4X3PNT(tmp_pt2, curr_state->xform, tmp_pt1);
-		polyline_vert_indices[polyline_vert_indices_count++] = bn_vert_tree_add(layers[curr_layer]->vert_tree, tmp_pt2[X], tmp_pt2[Y], tmp_pt2[Z], tol_sq); // bn_vert_tree ??
+		//polyline_vert_indices[polyline_vert_indices_count++] = bn_vert_tree_add(layers[curr_layer]->vert_tree, tmp_pt2[X], tmp_pt2[Y], tmp_pt2[Z], tol_sq);
+		layers[curr_layer]->vert_tree.push_back(vertex_create(V3ARGS(tmp_pt1)));
+		polyline_vert_indices[polyline_vert_indices_count++] = 
 		if (verbose) {
 		    fprintf(stderr, "Added 3D mesh vertex (%f %f %f) index = %d, number = %d\n",
 			   x, y, z, polyline_vert_indices[polyline_vert_indices_count-1],
@@ -3184,9 +3222,10 @@ process_3dface_entities_code(int code)
 		double tmp_pt1[3];
 		MAT4X3PNT(tmp_pt1, curr_state->xform, pts[vert_no]);
 		VMOVE(pts[vert_no], tmp_pt1);
-		face[vert_no] = bn_vert_tree_add(layers[curr_layer]->vert_tree,
-						 V3ARGS(pts[vert_no]),
-						 tol_sq);
+		// face[vert_no] = bn_vert_tree_add(layers[curr_layer]->vert_tree,
+		// 				 V3ARGS(pts[vert_no]),
+		// 				 tol_sq);
+		face[vert_no] = layers[curr_layer]->vert_tree.push_back(vertex_create(V3ARGS(pts[vert_no])));
 	    }
 	    add_triangle(face[0], face[1], face[2], curr_layer);
 	    add_triangle(face[2], face[3], face[0], curr_layer);
@@ -3545,15 +3584,15 @@ main(int argc, char *argv[])
 	    fprintf(stderr, "LAYER: %s, color = %d (%d %d %d)\n", layers[i]->name, layers[i]->color_number, V3ARGS(&rgb[layers[i]->color_number*3]));
 	}
 
-	if (layers[i]->curr_tri && layers[i]->vert_tree->curr_vert > 2) {
+	if (layers[i]->curr_tri && layers[i]->vert_tree.size() > 2) {
 	    sprintf(tmp_name, "bot.s%d", i);
-	    if (mk_bot(out_fp, tmp_name, RT_BOT_SURFACE, RT_BOT_UNORIENTED, 0,
-		       layers[i]->vert_tree->curr_vert, layers[i]->curr_tri, layers[i]->vert_tree->the_array,
-		       layers[i]->part_tris, (double *)NULL, (struct bu_bitv *)NULL)) {
-		fprintf(stderr, "Failed to make Bot\n");
-	    } else {
-		(void)mk_addmember(tmp_name, &head, NULL, WMOP_UNION);
-	    }
+	    // if (mk_bot(out_fp, tmp_name, RT_BOT_SURFACE, RT_BOT_UNORIENTED, 0,
+		//        layers[i]->vert_tree, layers[i]->curr_tri, layers[i]->vert_tree->the_array,
+		//        layers[i]->part_tris, (double *)NULL, (struct bu_bitv *)NULL)) {
+		// fprintf(stderr, "Failed to make Bot\n");
+	    // } else {
+		// (void)mk_addmember(tmp_name, &head, NULL, WMOP_UNION);
+	    // }
 	}
 
 	for (j = 0; j < BU_PTBL_LEN(&layers[i]->solids); j++) {
