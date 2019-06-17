@@ -3709,7 +3709,7 @@ main(int argc, char *argv[])
     }
     layers[0]->name = strdup("noname");
     layers[0]->color_number = 7;	/* default white */
-    layers[0]->vert_tree = bn_vert_tree_create();
+    layers[0]->vert_tree = create_vert_tree();
     bu_ptbl_init(&layers[0]->solids, 8, "layers[curr_layer]->solids");
 
     curr_color = layers[0]->color_number;
