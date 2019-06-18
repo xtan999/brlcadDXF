@@ -3,7 +3,6 @@ Tips:
 2: those are basic containers, can directly convert to std:: containers, converted to C struct containers, or left alone and carry the functions it's using along
 3: those all can directly convert to stdlib functions (calloc, malloc, realloc, ftell)
 4: bu_log == fprintf(stderr
-brlcad
 5: nmg is our generalized polygonal format (e.g., a quad or a 12-sided polygon), probably not relevant to you.  triangle meshes are handled via a different container, far more simple
 6: suggest just tackling on at a time, especially given info on 1-5, maybe it will seem more obvious in that context.
 7. std::set, std::map
@@ -32,11 +31,13 @@ checked * Fix all bu_alloc(), bu_malloc, bu_realloc(), bu_calloc()
 
 Question:
 
-* M_2PI is 2 * M_PI or M_2_PI ?
-* UNUSED(textScale) UNUSED(textFlag) what to do with these ?
+checked * M_2PI is 2 * M_PI or M_2_PI ? treated as 2 * M_PI
+checked * UNUSED(textScale) UNUSED(textFlag) what to do with these ? Removed UNUSED() in the drawMtext, drawString.
 * wdb.h write data base, do we need it?
 * Do we need drawMtext, drawstring functions??
 * EQUAL() what is this different than a == b ? can't find def
+* What to do with bu_put, bu_get, bu_getopt, bu_optarg, bu_exit, bu_debug,
+  bu_optind, bu_debug_coredump, .
 
 
 Development Note: 
@@ -58,4 +59,6 @@ Development Note:
   all equals 0 by guessing.
 * Added a NEAR_EQUAL function for the undefined NEAR_EQAUL, replace EQUAL() with ==
 * replaced both bu_malloc and bu_ALLOC with malloc()
-* Removed UNUSED() in the drawMtext, drawString.
+* Replace if(!vls) with (std::string vls.empty()). if(vls) with (!vls.empty())
+* Replace strcat(vls, line) to std::string vls += std::string str(line) 
+* define SQRT_SMALL_FASTF    1.0e-39, there is another def 1.0e-40 should we choose that one instead?

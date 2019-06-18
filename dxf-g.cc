@@ -57,6 +57,9 @@
 /* private headers */
 #include "./dxf.h"
 
+/* replicated code from defines.h to avoid dependency */
+#define SQRT_SMALL_FASTF    1.0e-39 /* This squared gives zero */
+
 /* replicated code from vmath.h to avoid dependency */
 #define X       0
 #define Y       1
@@ -64,6 +67,7 @@
 #define H       3
 #define W       H
 #define M_PI  3.14159265358979323846
+#define M_2PI 6.28318530717958647692
 #define MSX     0
 #define MSY     5
 #define MSZ     10
@@ -245,11 +249,7 @@ int
 Add_vert( double x, double y, double z, struct vert_root *vert_root, double local_tol_sq )
 {
     union vert_tree *ptr, *prev=NULL, *new_leaf, *new_node;
-    double diff[4];
-	diff[0] = 0;
-	diff[1] = 0;
-	diff[2] = 0;
-	diff[3] = 0;
+    double diff[4] = {0, 0, 0, 0};
     double vertex[4];
 
     //BN_CK_VERT_TREE( vert_root ); 
@@ -533,7 +533,7 @@ char line[MAX_LINE_SIZE];
 
 static char *usage="Usage: dxf-g [-c] [-d] [-v] [-t tolerance] [-s scale_factor] input_file.dxf output_file.g\n";
 
-// static FILE *dxf;
+static FILE *dxf;
 static struct rt_wdb *out_fp;
 static char *output_file;
 static char *dxf_file;
@@ -697,7 +697,11 @@ bool NEAR_EQUAL(double a, double b, double local_tol_sql){
 	}
 	return false;
 }
-
+/* function for C style string to C++ string to avoid initialization */
+std::string Char2String(const char* line){
+	std::string str(line);
+	return str;
+}
 static char *
 make_brlcad_name(const char *nameline)
 {
@@ -2668,6 +2672,7 @@ static int
 process_mtext_entities_code(int code)
 {
     std::string vls;
+	std::string str;
     static int attachPoint = 0;
     static int drawingDirection = 0;
     static double textHeight = 0.0;
@@ -2682,19 +2687,20 @@ process_mtext_entities_code(int code)
 
     switch (code) {
 	case 3:
-	    if (!vls) {
+	    if (vls.empty()) {
 		ftell(vls); // what should we replace?? get()?
 		//bu_vls_init(vls);  initialize the string??
 	    }
-		std::string lstr(line);
-	    strcat(vls, line);
+		vls += Char2String(line);
+	    //strcat(vls, line);
 	    break;
 	case 1:
-	    if (!vls) {	
+	    if (vls.empty()) {	
 		ftell(vls);
 		//bu_vls_init(vls);
 	    }
-	    strcat(vls, line);
+		vls += Char2String(line);
+	    //strcat(vls, line);
 	    break;
 	case 8:		/* layer name */
 	    if (curr_layer_name) {
@@ -2761,9 +2767,11 @@ process_mtext_entities_code(int code)
 
 	    {
 		char noname[] = "NO_NAME";
-		char *t = NULL;
-		if (vls) {
-		    t = strdup(vls);
+		//char *t = NULL;
+		std::string t = "";
+		if (!vls.empty()) {
+		    //t = strdup(vls);
+			t = vls;
 		}
 		drawMtext((t) ? t : noname, attachPoint, drawingDirection, textHeight, entityHeight,
 			  charWidth, rectWidth, rotationAngle, insertionPoint);
@@ -2807,8 +2815,8 @@ process_text_attrib_entities_code(int code)
     static int horizAlignment = 0;
     static int vertAlignment = 0;
     static int textFlag = 0;
-    static double firstAlignmentPoint[3] = VINIT_ZERO;
-    static double secondAlignmentPoint[3] = VINIT_ZERO;
+    static double firstAlignmentPoint[3] = {0, 0, 0};//VINIT_ZERO;
+    static double secondAlignmentPoint[3] = {0, 0, 0};//VINIT_ZERO;
     static double textScale = 1.0;
     static double textHeight;
     static double textRotation = 0.0;
