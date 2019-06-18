@@ -702,6 +702,7 @@ std::string Char2String(const char* line){
 	std::string str(line);
 	return str;
 }
+
 static char *
 make_brlcad_name(const char *nameline)
 {
@@ -2370,7 +2371,7 @@ convertSecretCodes(char *c, char *cp, int *maxLineLen)
 // 	scale = xScale < yScale ? xScale : yScale;
 // 	bn_vlist_2string(&vhead, &free_hd, copyOfText,
 // 			 firstAlignmentPoint[X], firstAlignmentPoint[Y],
-// 			 scale, textRotation); // list related??
+// 			 scale, textRotation); 
 // 	nmg_vlist_to_eu(&vhead, layers[curr_layer]->s);
 // 	BN_FREE_VLIST(&free_hd, &vhead);
 //     } else if (horizAlignment == LEFT && vertAlignment == BASELINE) {
@@ -2409,7 +2410,7 @@ convertSecretCodes(char *c, char *cp, int *maxLineLen)
 // 	nmg_vlist_to_eu(&vhead, layers[curr_layer]->s);
 // 	BN_FREE_VLIST(&free_hd, &vhead);
 //     } else {
-// 	//fprintf(stderr, "cannot handle this alignment: horiz = %d, vert = %d\n", horizAlignment, vertAlignment);
+// 	fprintf(stderr, "cannot handle this alignment: horiz = %d, vert = %d\n", horizAlignment, vertAlignment);
 //     }
 
 //     free(copyOfText);
@@ -2672,7 +2673,6 @@ static int
 process_mtext_entities_code(int code)
 {
     std::string vls;
-	std::string str;
     static int attachPoint = 0;
     static int drawingDirection = 0;
     static double textHeight = 0.0;
@@ -2688,15 +2688,15 @@ process_mtext_entities_code(int code)
     switch (code) {
 	case 3:
 	    if (vls.empty()) {
-		ftell(vls); // what should we replace?? get()?
-		//bu_vls_init(vls);  initialize the string??
+		//BU_GET(vls);
+		//bu_vls_init(vls);
 	    }
 		vls += Char2String(line);
 	    //strcat(vls, line);
 	    break;
 	case 1:
 	    if (vls.empty()) {	
-		ftell(vls);
+		//BU_GET(vls);
 		//bu_vls_init(vls);
 	    }
 		vls += Char2String(line);
@@ -2778,8 +2778,8 @@ process_mtext_entities_code(int code)
 		if (t)
 		    free(t); //"temp char buf");
 	    }
-	    bu_vls_free(vls);
-	    BU_PUT(vls, struct bu_vls);
+	    // bu_vls_free(vls);
+	    // BU_PUT(vls, struct bu_vls);
 
 	    attachPoint = 0;
 	    textHeight = 0.0;
@@ -3567,12 +3567,12 @@ readcodes()
 	line_len--;
     }
 
-    // if (verbose) {
-	// line_num++;
-	// fprintf(stderr, "%d:\t%d\n", line_num, code);
-	// line_num++;
-	// fprintf(stderr, "%d:\t%s\n", line_num, line);
-    // }
+    if (verbose) {
+	line_num++;
+	fprintf(stderr, "%d:\t%d\n", line_num, code);
+	line_num++;
+	fprintf(stderr, "%d:\t%s\n", line_num, line);
+    }
 
     return code;
 }
