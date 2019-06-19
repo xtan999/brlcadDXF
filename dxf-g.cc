@@ -704,6 +704,18 @@ std::string Char2String(const char* line){
 	return str;
 }
 
+/* replicated version of strlcpy  */
+size_t strlcpy(char * dst, const char * src, size_t maxlen) {
+    const size_t srclen = strlen(src);
+    if (srclen + 1 < maxlen) {
+        memcpy(dst, src, srclen + 1);
+    } else if (maxlen != 0) {
+        memcpy(dst, src, maxlen - 1);
+        dst[maxlen-1] = '\0';
+    }
+    return srclen;
+}
+
 static char *
 make_brlcad_name(const char *nameline)
 {
@@ -2511,9 +2523,9 @@ drawMtext(char *text, int attachPoint, int drawingDirection, double textHeight, 
 		done = 1;
 	    }
 	    *cp = '\0';
-	    bn_vlist_2string(&vhead, &free_hd, c,
-			     startx, starty,
-			     scale, rotationAngle);
+	    // bn_vlist_2string(&vhead, &free_hd, c,
+		// 	     startx, starty,
+		// 	     scale, rotationAngle);
 	    // nmg_vlist_to_eu(&vhead, layers[curr_layer]->s);
 	    // BN_FREE_VLIST(&free_hd, &vhead);
 	    c = ++cp;
@@ -3597,47 +3609,50 @@ main(int argc, char *argv[])
     cos_delta = cos(delta_angle);
 
     /* get command line arguments */
-    scale_factor = 1.0;
-    while ((c = bu_getopt(argc, argv, "cdvt:s:h?")) != -1) {
-	switch (c) {
-	    case 's':	/* scale factor */
-		scale_factor = atof(bu_optarg); //option? Maybe we can remove it? we don't need this driver
-		if (scale_factor < SQRT_SMALL_FASTF) {
-		    fprintf(stderr, "scale factor too small (%g < %g)\n", scale_factor, SQRT_SMALL_FASTF);
-		    //bu_exit(1, "%s", usage);
-			fprintf(stderr, "%s", usage);
-			exit(1);
-		}
-		break;
-	    case 'c':	/* ignore colors */
-		ignore_colors = 1;
-		break;
-	    case 'd':	/* debug */
-		//bu_debug = BU_DEBUG_COREDUMP;
-		break;
-	    case 't':	/* tolerance */
-		tol = atof(bu_optarg);
-		tol_sq = tol * tol;
-		break;
-	    case 'v':	/* verbose */
-		verbose = 1;
-		break;
-	    default:
-		//bu_exit(1, "%s", usage);
-		fprintf(stderr, "%s", usage);
-		exit(1);
-	}
-    }
+    // scale_factor = 1.0;
+    // while ((c = bu_getopt(argc, argv, "cdvt:s:h?")) != -1) {
+	// switch (c) {
+	//     case 's':	/* scale factor */
+	// 	scale_factor = atof(bu_optarg); //option? Maybe we can remove it? we don't need this driver
+	// 	if (scale_factor < SQRT_SMALL_FASTF) {
+	// 	    fprintf(stderr, "scale factor too small (%g < %g)\n", scale_factor, SQRT_SMALL_FASTF);
+	// 	    //bu_exit(1, "%s", usage);
+	// 		fprintf(stderr, "%s", usage);
+	// 		exit(1);
+	// 	}
+	// 	break;
+	//     case 'c':	/* ignore colors */
+	// 	ignore_colors = 1;
+	// 	break;
+	//     case 'd':	/* debug */
+	// 	//bu_debug = BU_DEBUG_COREDUMP;
+	// 	break;
+	//     case 't':	/* tolerance */
+	// 	tol = atof(bu_optarg);
+	// 	tol_sq = tol * tol;
+	// 	break;
+	//     case 'v':	/* verbose */
+	// 	verbose = 1;
+	// 	break;
+	//     default:
+	// 	//bu_exit(1, "%s", usage);
+	// 	fprintf(stderr, "%s", usage);
+	// 	exit(1);
+	// }
+    // }
+	ignore_colors = 1;
+	tol_sq = 0.01;
+	verbose = 1;
 
-    if (argc - bu_optind < 2) {
-	//bu_exit(1, "%s", usage);
-	fprintf(stderr,"%s", usage );
-	exit(1);
-    }
+    // if (argc - bu_optind < 2) {
+	// //bu_exit(1, "%s", usage);
+	// fprintf(stderr,"%s", usage );
+	// exit(1);
+    // }
 
-    dxf_file = argv[bu_optind++];
-    output_file = argv[bu_optind];
-
+    // dxf_file = argv[bu_optind++];
+    // output_file = argv[bu_optind];
+	dxf_file = "arc.dxf";
     if ((dxf=fopen(dxf_file, "rb")) == NULL) {
 	perror(dxf_file);
 	//bu_exit(1, "Cannot open DXF file (%s)\n", dxf_file);
@@ -3667,7 +3682,7 @@ main(int argc, char *argv[])
     base_name = (char *)calloc((unsigned int)name_len + 1, 1);
     strlcpy(base_name , ptr1 , name_len+1);
 
-    mk_id(out_fp, base_name);
+    // mk_id(out_fp, base_name);
 
     // BU_LIST_INIT(&block_head);
     // BU_LIST_INIT(&free_hd);
@@ -3759,16 +3774,16 @@ main(int argc, char *argv[])
 	    fprintf(stderr, "LAYER: %s, color = %d (%d %d %d)\n", layers[i]->name, layers[i]->color_number, V3ARGS(&rgb[layers[i]->color_number*3]));
 	}
 
-	if (layers[i]->curr_tri && layers[i]->vert_tree->curr_vert > 2) {
-	    sprintf(tmp_name, "bot.s%d", i);
-	    if (mk_bot(out_fp, tmp_name, RT_BOT_SURFACE, RT_BOT_UNORIENTED, 0,
-		       layers[i]->vert_tree, layers[i]->curr_tri, layers[i]->vert_tree->the_array,
-		       layers[i]->part_tris, (double *)NULL, (struct bu_bitv *)NULL)) {
-		fprintf(stderr, "Failed to make Bot\n");
-	    } else {
-		(void)mk_addmember(tmp_name, &head, NULL, WMOP_UNION);
-	    }
-	}
+	// if (layers[i]->curr_tri && layers[i]->vert_tree->curr_vert > 2) {
+	//     sprintf(tmp_name, "bot.s%d", i);
+	//     if (mk_bot(out_fp, tmp_name, RT_BOT_SURFACE, RT_BOT_UNORIENTED, 0,
+	// 	       layers[i]->vert_tree, layers[i]->curr_tri, layers[i]->vert_tree->the_array,
+	// 	       layers[i]->part_tris, (double *)NULL, (struct bu_bitv *)NULL)) {
+	// 	fprintf(stderr, "Failed to make Bot\n");
+	//     } else {
+	// 	(void)mk_addmember(tmp_name, &head, NULL, WMOP_UNION);
+	//     }
+	// }
 
 	/* obtain dynamic storage for a new wmember structure, we may ignore for std::list */
 	// for (j = 0; j < BU_PTBL_LEN(&layers[i]->solids); j++) {
@@ -3776,20 +3791,20 @@ main(int argc, char *argv[])
 	//     free((char *)BU_PTBL_GET(&layers[i]->solids, j)); 
 	// }
 
-	if (layers[i]->m) {
-	    char name[32];
-	    struct rt_sketch_internal *skt;
+	// if (layers[i]->m) {
+	//     char name[32];
+	//     struct rt_sketch_internal *skt;
 
-	    sprintf(name, "sketch.%d", i);
-	    skt = nmg_wire_edges_to_sketch(layers[i]->m);
-	    if (skt != NULL) {
-		mk_sketch(out_fp, name, skt);
-		(void) mk_addmember(name, &head, NULL, WMOP_UNION);
-		rt_curve_free(&skt->curve);
-		if (skt->verts)
-		    free(skt->verts); //"free verts");
-		free(skt);// "free sketch");
-	    }
+	//     sprintf(name, "sketch.%d", i);
+	//     skt = nmg_wire_edges_to_sketch(layers[i]->m);
+	//     if (skt != NULL) {
+	// 	mk_sketch(out_fp, name, skt);
+	// 	(void) mk_addmember(name, &head, NULL, WMOP_UNION);
+	// 	rt_curve_free(&skt->curve);
+	// 	if (skt->verts)
+	// 	    free(skt->verts); //"free verts");
+	// 	free(skt);// "free sketch");
+	//     }
 	}
 
 	if (layers[i]->line_count) {
@@ -3852,35 +3867,35 @@ main(int argc, char *argv[])
 	}
 
 
-	if (!head.empty()) {//BU_LIST_NON_EMPTY(&head)
-	    unsigned char *tmp_rgb;
-	    char *comb_name = BU_VLS_INIT_ZERO;
+	// if (!head.empty()) {//BU_LIST_NON_EMPTY(&head)
+	//     unsigned char *tmp_rgb;
+	//     char *comb_name = BU_VLS_INIT_ZERO;
 
-	    tmp_rgb = &rgb[layers[i]->color_number*3];
-	    bu_vls_printf(&comb_name, "%s.c.%d", layers[i]->name, i);
-	    if (mk_comb(out_fp, bu_vls_addr(&comb_name), &head, 1, NULL, NULL,
-			tmp_rgb, 1, 0, 1, 100, 0, 0, 0)) {
-		fprintf(stderr, "Failed to make region %s\n", layers[i]->name);
-	    } else {
-		(void)mk_addmember(bu_vls_addr(&comb_name), &head_all, NULL, WMOP_UNION);
-	    }
-	}
+	//     tmp_rgb = &rgb[layers[i]->color_number*3];
+	//     bu_vls_printf(&comb_name, "%s.c.%d", layers[i]->name, i);
+	//     if (mk_comb(out_fp, bu_vls_addr(&comb_name), &head, 1, NULL, NULL,
+	// 		tmp_rgb, 1, 0, 1, 100, 0, 0, 0)) {
+	// 	fprintf(stderr, "Failed to make region %s\n", layers[i]->name);
+	//     } else {
+	// 	(void)mk_addmember(bu_vls_addr(&comb_name), &head_all, NULL, WMOP_UNION);
+	//     }
+	// }
 
-    }
+    // }
 
-    if (!head_all.empty()) {//BU_LIST_NON_EMPTY(&head_all)
-	char *top_name = BU_VLS_INIT_ZERO; // variable length string??
-	int count = 0;
+    // if (!head_all.empty()) {//BU_LIST_NON_EMPTY(&head_all)
+	// char *top_name = BU_VLS_INIT_ZERO; // variable length string??
+	// int count = 0;
 
-	strcpy(top_name, "all");
-	while (db_lookup(out_fp->dbip, bu_vls_addr(&top_name), LOOKUP_QUIET) != RT_DIR_NULL) {
-	    count++;
-	    bu_vls_trunc(&top_name, 0);
-	    bu_vls_printf(&top_name, "all.%d", count);
-	}
+	// strcpy(top_name, "all");
+	// while (db_lookup(out_fp->dbip, bu_vls_addr(&top_name), LOOKUP_QUIET) != RT_DIR_NULL) {
+	//     count++;
+	//     bu_vls_trunc(&top_name, 0);
+	//     bu_vls_printf(&top_name, "all.%d", count);
+	// }
 
-	(void)mk_comb(out_fp, bu_vls_addr(&top_name), &head_all, 0, NULL, NULL, NULL, 0, 0, 0, 0, 0, 0, 0);
-    }
+	// (void)mk_comb(out_fp, bu_vls_addr(&top_name), &head_all, 0, NULL, NULL, NULL, 0, 0, 0, 0, 0, 0, 0);
+    // }
 
     return 0;
 }
