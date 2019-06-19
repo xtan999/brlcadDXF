@@ -418,7 +418,7 @@ struct layer {
     size_t leader_count;
     size_t face3d_count;
     size_t point_count;
-    struct bu_ptbl solids;
+    struct std::list<uint32_t> solids;
     struct model *m;
     struct shell *s;
 };
@@ -531,10 +531,11 @@ static int invisible = 0;
 #define MAX_LINE_SIZE 2050
 char line[MAX_LINE_SIZE];
 
-static char *usage="Usage: dxf-g [-c] [-d] [-v] [-t tolerance] [-s scale_factor] input_file.dxf output_file.g\n";
+const char *usage = "Usage: dxf-g [-c] [-d] [-v] [-t tolerance] [-s scale_factor] input_file.dxf output_file.g\n";
 
 static FILE *dxf;
-static struct rt_wdb *out_fp;
+//static struct rt_wdb *out_fp;
+static FILE *out_fp;
 static char *output_file;
 static char *dxf_file;
 static int verbose = 0;
@@ -776,7 +777,7 @@ get_layer()
 
 	}
 	layers[curr_layer]->color_number = curr_color;
-	bu_ptbl_init(&layers[curr_layer]->solids, 8, "layers[curr_layer]->solids");
+	//bu_ptbl_init(&layers[curr_layer]->solids, 8, "layers[curr_layer]->solids");
 	if (verbose) {
 	    fprintf(stderr, "\tNew layer name: %s\n", layers[curr_layer]->name);
 	}
@@ -1160,8 +1161,8 @@ process_point_entities_code(int code)
 	    layers[curr_layer]->point_count++;
 	    MAT4X3PNT(tmp_pt, curr_state->xform, pt);
 	    sprintf(tmp_name, "point.%lu", (long unsigned int)layers[curr_layer]->point_count);
-	    (void)mk_sph(out_fp, tmp_name, tmp_pt, 0.1);
-	    (void)bu_ptbl_ins(&(layers[curr_layer]->solids), (long *)strdup(tmp_name));
+	    //(void)mk_sph(out_fp, tmp_name, tmp_pt, 0.1);
+	    //(void)bu_ptbl_ins(&(layers[curr_layer]->solids), (long *)strdup(tmp_name));
 	    curr_state->sub_state = UNKNOWN_ENTITY_STATE;
 	    process_entities_code[curr_state->sub_state](code);
 	    break;
@@ -2336,85 +2337,87 @@ convertSecretCodes(char *c, char *cp, int *maxLineLen)
 }
 
 
-// void
-// drawString(char *theText, double *firstAlignmentPoint, double *secondAlignmentPoint,
-// 	   double textHeight, double UNUSED(textScale), double textRotation, int horizAlignment, int vertAlignment, int UNUSED(textFlag))// first and second alignmentpoint are point_t
-// {
-//     double stringLength = 0.0;
-//     char *copyOfText;
-//     char *c, *cp;
-//     double diff[4];
-//     std::list<uint32_t> vhead;
-//     int maxLineLen = 0;
+void
+drawString(char *theText, double *firstAlignmentPoint, double *secondAlignmentPoint,
+	   double textHeight, double textScale, double textRotation, int horizAlignment, int vertAlignment, int textFlag)
+{
+    double stringLength = 0.0;
+    char *copyOfText;
+    char *c, *cp;
+    double diff[4];
+    std::list<uint32_t> vhead;
+    int maxLineLen = 0;
+	(void)textScale;
+	(void)textFlag;
 
-//     //BU_LIST_INIT(&vhead);
+    //BU_LIST_INIT(&vhead);
 
-//     copyOfText = (char *)alloc((unsigned int)strlen(theText)+1, 1, "copyOfText"); //bu_calloc
-//     c = theText;
-//     cp = copyOfText;
-//     (void)convertSecretCodes(c, cp, &maxLineLen);
+    copyOfText = (char *)calloc((unsigned int)strlen(theText)+1, 1); //bu_calloc
+    c = theText;
+    cp = copyOfText;
+    (void)convertSecretCodes(c, cp, &maxLineLen);
 
-//     free(theText); //"theText");
-//     stringLength = strlen(copyOfText);
+    free(theText); //"theText");
+    stringLength = strlen(copyOfText);
 
-//     if (horizAlignment == FIT && vertAlignment == BASELINE) {
-// 	double allowedLength;
-// 	double xScale=1.0;
-// 	double yScale=1.0;
-// 	double scale;
+    if (horizAlignment == FIT && vertAlignment == BASELINE) {
+	double allowedLength;
+	double xScale=1.0;
+	double yScale=1.0;
+	double scale;
 
-// 	/* fit along baseline */
-// 	VSUB2(diff, firstAlignmentPoint, secondAlignmentPoint);
-// 	allowedLength = MAGNITUDE(diff);
-// 	xScale = allowedLength / stringLength;
-// 	yScale = textHeight;
-// 	scale = xScale < yScale ? xScale : yScale;
-// 	bn_vlist_2string(&vhead, &free_hd, copyOfText,
-// 			 firstAlignmentPoint[X], firstAlignmentPoint[Y],
-// 			 scale, textRotation); 
-// 	nmg_vlist_to_eu(&vhead, layers[curr_layer]->s);
-// 	BN_FREE_VLIST(&free_hd, &vhead);
-//     } else if (horizAlignment == LEFT && vertAlignment == BASELINE) {
-// 	bn_vlist_2string(&vhead, &free_hd, copyOfText,
-// 			 firstAlignmentPoint[X], firstAlignmentPoint[Y],
-// 			 textHeight, textRotation);
-// 	nmg_vlist_to_eu(&vhead, layers[curr_layer]->s);
-// 	BN_FREE_VLIST(&free_hd, &vhead);
-//     } else if ((horizAlignment == CENTER || horizAlignment == HMIDDLE) && vertAlignment == BASELINE) {
-// 	double len = stringLength * textHeight;
-// 	firstAlignmentPoint[X] = secondAlignmentPoint[X] - cos(textRotation) * len / 2.0;
-// 	firstAlignmentPoint[Y] = secondAlignmentPoint[Y] - sin(textRotation) * len / 2.0;
-// 	bn_vlist_2string(&vhead, &free_hd, copyOfText,
-// 			 firstAlignmentPoint[X], firstAlignmentPoint[Y],
-// 			 textHeight, textRotation);
-// 	nmg_vlist_to_eu(&vhead, layers[curr_layer]->s);
-// 	BN_FREE_VLIST(&free_hd, &vhead);
-//     } else if ((horizAlignment == CENTER || horizAlignment == HMIDDLE) && vertAlignment == VMIDDLE) {
-// 	double len = stringLength * textHeight;
-// 	firstAlignmentPoint[X] = secondAlignmentPoint[X] - len / 2.0;
-// 	firstAlignmentPoint[Y] = secondAlignmentPoint[Y] - textHeight / 2.0;
-// 	firstAlignmentPoint[X] = firstAlignmentPoint[X] - (1.0 - cos(textRotation)) * len / 2.0;
-// 	firstAlignmentPoint[Y] = firstAlignmentPoint[Y] - sin(textRotation) * len / 2.0;
-// 	bn_vlist_2string(&vhead, &free_hd, copyOfText,
-// 			 firstAlignmentPoint[X], firstAlignmentPoint[Y],
-// 			 textHeight, textRotation);
-// 	nmg_vlist_to_eu(&vhead, layers[curr_layer]->s);
-// 	BN_FREE_VLIST(&free_hd, &vhead);
-//     } else if (horizAlignment == RIGHT && vertAlignment == BASELINE) {
-// 	double len = stringLength * textHeight;
-// 	firstAlignmentPoint[X] = secondAlignmentPoint[X] - cos(textRotation) * len;
-// 	firstAlignmentPoint[Y] = secondAlignmentPoint[Y] - sin(textRotation) * len;
-// 	bn_vlist_2string(&vhead, &free_hd, copyOfText,
-// 			 firstAlignmentPoint[X], firstAlignmentPoint[Y],
-// 			 textHeight, textRotation);
-// 	nmg_vlist_to_eu(&vhead, layers[curr_layer]->s);
-// 	BN_FREE_VLIST(&free_hd, &vhead);
-//     } else {
-// 	fprintf(stderr, "cannot handle this alignment: horiz = %d, vert = %d\n", horizAlignment, vertAlignment);
-//     }
+	/* fit along baseline */
+	VSUB2(diff, firstAlignmentPoint, secondAlignmentPoint);
+	allowedLength = MAGNITUDE(diff);
+	xScale = allowedLength / stringLength;
+	yScale = textHeight;
+	scale = xScale < yScale ? xScale : yScale;
+	// bn_vlist_2string(&vhead, &free_hd, copyOfText,
+	// 		 firstAlignmentPoint[X], firstAlignmentPoint[Y],
+	// 		 scale, textRotation); 
+	// nmg_vlist_to_eu(&vhead, layers[curr_layer]->s);
+	// BN_FREE_VLIST(&free_hd, &vhead);
+    // } else if (horizAlignment == LEFT && vertAlignment == BASELINE) {
+	// bn_vlist_2string(&vhead, &free_hd, copyOfText,
+	// 		 firstAlignmentPoint[X], firstAlignmentPoint[Y],
+	// 		 textHeight, textRotation);
+	// nmg_vlist_to_eu(&vhead, layers[curr_layer]->s);
+	// BN_FREE_VLIST(&free_hd, &vhead);
+    // } else if ((horizAlignment == CENTER || horizAlignment == HMIDDLE) && vertAlignment == BASELINE) {
+	// double len = stringLength * textHeight;
+	// firstAlignmentPoint[X] = secondAlignmentPoint[X] - cos(textRotation) * len / 2.0;
+	// firstAlignmentPoint[Y] = secondAlignmentPoint[Y] - sin(textRotation) * len / 2.0;
+	// bn_vlist_2string(&vhead, &free_hd, copyOfText,
+	// 		 firstAlignmentPoint[X], firstAlignmentPoint[Y],
+	// 		 textHeight, textRotation);
+	// nmg_vlist_to_eu(&vhead, layers[curr_layer]->s);
+	// BN_FREE_VLIST(&free_hd, &vhead);
+    // } else if ((horizAlignment == CENTER || horizAlignment == HMIDDLE) && vertAlignment == VMIDDLE) {
+	// double len = stringLength * textHeight;
+	// firstAlignmentPoint[X] = secondAlignmentPoint[X] - len / 2.0;
+	// firstAlignmentPoint[Y] = secondAlignmentPoint[Y] - textHeight / 2.0;
+	// firstAlignmentPoint[X] = firstAlignmentPoint[X] - (1.0 - cos(textRotation)) * len / 2.0;
+	// firstAlignmentPoint[Y] = firstAlignmentPoint[Y] - sin(textRotation) * len / 2.0;
+	// bn_vlist_2string(&vhead, &free_hd, copyOfText,
+	// 		 firstAlignmentPoint[X], firstAlignmentPoint[Y],
+	// 		 textHeight, textRotation);
+	// nmg_vlist_to_eu(&vhead, layers[curr_layer]->s);
+	// BN_FREE_VLIST(&free_hd, &vhead);
+    // } else if (horizAlignment == RIGHT && vertAlignment == BASELINE) {
+	// double len = stringLength * textHeight;
+	// firstAlignmentPoint[X] = secondAlignmentPoint[X] - cos(textRotation) * len;
+	// firstAlignmentPoint[Y] = secondAlignmentPoint[Y] - sin(textRotation) * len;
+	// bn_vlist_2string(&vhead, &free_hd, copyOfText,
+	// 		 firstAlignmentPoint[X], firstAlignmentPoint[Y],
+	// 		 textHeight, textRotation);
+	// nmg_vlist_to_eu(&vhead, layers[curr_layer]->s);
+	// BN_FREE_VLIST(&free_hd, &vhead);
+    } else {
+	fprintf(stderr, "cannot handle this alignment: horiz = %d, vert = %d\n", horizAlignment, vertAlignment);
+    }
 
-//     free(copyOfText);
-// }
+    free(copyOfText);
+}
 
 
 void
@@ -2512,7 +2515,7 @@ drawMtext(char *text, int attachPoint, int drawingDirection, double textHeight, 
 			     startx, starty,
 			     scale, rotationAngle);
 	    // nmg_vlist_to_eu(&vhead, layers[curr_layer]->s);
-	    BN_FREE_VLIST(&free_hd, &vhead);
+	    // BN_FREE_VLIST(&free_hd, &vhead);
 	    c = ++cp;
 	    startx -= lineSpace * ydir[X];
 	    starty -= lineSpace * ydir[Y];
@@ -2749,7 +2752,7 @@ process_mtext_entities_code(int code)
 	    break;
 	case 0:
 	    if (verbose) {
-		fprintf(stderr, "MTEXT (%s), height = %g, entityHeight = %g, rectWidth = %g\n", (vls) ? bu_vls_addr(vls) : "NO_NAME", textHeight, entityHeight, rectWidth);
+		fprintf(stderr, "MTEXT (%s), height = %g, entityHeight = %g, rectWidth = %g\n", (!vls.empty()) ? vls : "NO_NAME", textHeight, entityHeight, rectWidth);//(vls) ? bu_vls_addr(vls)
 		fprintf(stderr, "\tattachPoint = %d, charWidth = %g, insertPt = (%g %g %g)\n", attachPoint, charWidth, V3ARGS(insertionPoint));
 	    }
 	    /* draw the text */
@@ -2767,11 +2770,10 @@ process_mtext_entities_code(int code)
 
 	    {
 		char noname[] = "NO_NAME";
-		//char *t = NULL;
-		std::string t = "";
+		char *t = NULL;
 		if (!vls.empty()) {
 		    //t = strdup(vls);
-			t = vls;
+			t = strdup(vls.c_str());
 		}
 		drawMtext((t) ? t : noname, attachPoint, drawingDirection, textHeight, entityHeight,
 			  charWidth, rectWidth, rotationAngle, insertionPoint);
@@ -3150,7 +3152,7 @@ process_spline_entities_code(int code)
     static int subCounter2 = 0;
     int i;
     int coord;
-    struct edge_g_cnurb *crv;
+    //struct edge_g_cnurb *crv;
     int pt_type;
     int ncoords;
     struct vertex *v1 = NULL;
@@ -3260,47 +3262,47 @@ process_spline_entities_code(int code)
 
 	    if (flag & SPLINE_RATIONAL) {
 		ncoords = 4;
-		pt_type = RT_NURB_MAKE_PT_TYPE(ncoords, RT_NURB_PT_XYZ, RT_NURB_PT_RATIONAL); //nurb.h ??
+		//pt_type = RT_NURB_MAKE_PT_TYPE(ncoords, RT_NURB_PT_XYZ, RT_NURB_PT_RATIONAL);
 	    } else {
 		ncoords = 3;
-		pt_type = RT_NURB_MAKE_PT_TYPE(ncoords, RT_NURB_PT_XYZ, RT_NURB_PT_NONRAT);
+		//pt_type = RT_NURB_MAKE_PT_TYPE(ncoords, RT_NURB_PT_XYZ, RT_NURB_PT_NONRAT);
 	    }
-	    crv = nmg_nurb_new_cnurb(degree+1, numCtlPts+degree+1, numCtlPts, pt_type);
+	    // crv = nmg_nurb_new_cnurb(degree+1, numCtlPts+degree+1, numCtlPts, pt_type);
 
-	    for (i = 0; i < numKnots; i++) {
-		crv->k.knots[i] = knots[i];
-	    }
-	    for (i = 0; i < numCtlPts; i++) {
-		crv->ctl_points[i*ncoords + 0] = ctlPts[i*3+0];
-		crv->ctl_points[i*ncoords + 1] = ctlPts[i*3+1];
-		crv->ctl_points[i*ncoords + 2] = ctlPts[i*3+2];
-		if (flag & SPLINE_RATIONAL) {
-		    crv->ctl_points[i*ncoords + 3] = weights[i];
-		}
-	    }
-	    if (!layers[curr_layer]->m) {
-		create_nmg();
-	    }
-	    startParam = knots[0];
-	    stopParam = knots[numKnots-1];
-	    paramDelta = (stopParam - startParam) / (double)splineSegs;
-	    nmg_nurb_c_eval(crv, startParam, pt);
-	    for (i = 0; i < splineSegs; i++) {
-		double param = startParam + paramDelta * (i+1);
-		eu = nmg_me(v1, v2, layers[curr_layer]->s);
-		v1 = eu->vu_p->v_p;
-		if (i == 0) {
-		    nmg_vertex_gv(v1, pt);
-		}
-		nmg_nurb_c_eval(crv, param, pt);
-		v2 = eu->eumate_p->vu_p->v_p;
-		nmg_vertex_gv(v2, pt);
+	    // for (i = 0; i < numKnots; i++) {
+		// crv->k.knots[i] = knots[i];
+	    // }
+	    // for (i = 0; i < numCtlPts; i++) {
+		// crv->ctl_points[i*ncoords + 0] = ctlPts[i*3+0];
+		// crv->ctl_points[i*ncoords + 1] = ctlPts[i*3+1];
+		// crv->ctl_points[i*ncoords + 2] = ctlPts[i*3+2];
+		// if (flag & SPLINE_RATIONAL) {
+		//     crv->ctl_points[i*ncoords + 3] = weights[i];
+		// }
+	    // }
+	    // if (!layers[curr_layer]->m) {
+		// create_nmg();
+	    // }
+	    // startParam = knots[0];
+	    // stopParam = knots[numKnots-1];
+	    // paramDelta = (stopParam - startParam) / (double)splineSegs;
+	    // nmg_nurb_c_eval(crv, startParam, pt);
+	    // for (i = 0; i < splineSegs; i++) {
+		// double param = startParam + paramDelta * (i+1);
+		// eu = nmg_me(v1, v2, layers[curr_layer]->s);
+		// v1 = eu->vu_p->v_p;
+		// if (i == 0) {
+		//     nmg_vertex_gv(v1, pt);
+		// }
+		// nmg_nurb_c_eval(crv, param, pt);
+		// v2 = eu->eumate_p->vu_p->v_p;
+		// nmg_vertex_gv(v2, pt);
 
-		v1 = v2;
-		v2 = NULL;
-	    }
+		// v1 = v2;
+		// v2 = NULL;
+	    // }
 
-	    nmg_nurb_free_cnurb(crv);
+	    // nmg_nurb_free_cnurb(crv);
 
 	    if (knots != NULL) free(knots); //"spline knots");
 	    if (weights != NULL) free(weights);// "spline weights");
@@ -3540,7 +3542,7 @@ readcodes()
     size_t line_len;
     static int line_num = 0;
 
-    curr_state->file_offset = bu_ftell(dxf);
+    curr_state->file_offset = ftell(dxf);
 
     if (fgets(line, MAX_LINE_SIZE, dxf) == NULL) {
 	return ERROR_FLAG;
@@ -3602,14 +3604,16 @@ main(int argc, char *argv[])
 		scale_factor = atof(bu_optarg); //option? Maybe we can remove it? we don't need this driver
 		if (scale_factor < SQRT_SMALL_FASTF) {
 		    fprintf(stderr, "scale factor too small (%g < %g)\n", scale_factor, SQRT_SMALL_FASTF);
-		    bu_exit(1, "%s", usage);
+		    //bu_exit(1, "%s", usage);
+			fprintf(stderr, "%s", usage);
+			exit(1);
 		}
 		break;
 	    case 'c':	/* ignore colors */
 		ignore_colors = 1;
 		break;
 	    case 'd':	/* debug */
-		bu_debug = BU_DEBUG_COREDUMP;
+		//bu_debug = BU_DEBUG_COREDUMP;
 		break;
 	    case 't':	/* tolerance */
 		tol = atof(bu_optarg);
@@ -3619,12 +3623,16 @@ main(int argc, char *argv[])
 		verbose = 1;
 		break;
 	    default:
-		// bu_exit(1, "%s", usage);
+		//bu_exit(1, "%s", usage);
+		fprintf(stderr, "%s", usage);
+		exit(1);
 	}
     }
 
     if (argc - bu_optind < 2) {
-	bu_exit(1, "%s", usage);
+	//bu_exit(1, "%s", usage);
+	fprintf(stderr,"%s", usage );
+	exit(1);
     }
 
     dxf_file = argv[bu_optind++];
@@ -3632,12 +3640,16 @@ main(int argc, char *argv[])
 
     if ((dxf=fopen(dxf_file, "rb")) == NULL) {
 	perror(dxf_file);
-	bu_exit(1, "Cannot open DXF file (%s)\n", dxf_file);
+	//bu_exit(1, "Cannot open DXF file (%s)\n", dxf_file);
+	fprintf(stderr, "Cannot open DXF file (%s)\n", dxf_file);
+	exit(1);
     }
 
-    if ((out_fp = wdb_fopen(output_file)) == NULL) {
+    if ((out_fp = fopen(output_file, "r")) == NULL) {//wdb_fopen(output_file)
 	perror(output_file);
-	bu_exit(1, "Cannot open BRL-CAD geometry file (%s)\n", output_file);
+	//bu_exit(1, "Cannot open BRL-CAD geometry file (%s)\n", output_file);
+	fprintf(stderr, "Cannot open BRL-CAD geometry file (%s)\n", output_file);
+	exit(1);
     }
 
     ptr1 = strrchr(dxf_file, '/');
@@ -3694,7 +3706,7 @@ main(int argc, char *argv[])
     process_tables_sub_code[LAYER_TABLE_STATE] = process_tables_layer_code;
 
     /* create storage for circles */
-    circle_pts = (double *)calloc(segs_per_circle, sizeof(double)*3);
+    //circle_pts = (double *)calloc(segs_per_circle, sizeof(double)*3);
     for (i = 0; i < segs_per_circle; i++) {
 	VSETALL(circle_pts[i], 0.0);
     }
@@ -3722,7 +3734,7 @@ main(int argc, char *argv[])
     layers[0]->name = strdup("noname");
     layers[0]->color_number = 7;	/* default white */
     layers[0]->vert_tree = create_vert_tree();
-    bu_ptbl_init(&layers[0]->solids, 8, "layers[curr_layer]->solids");
+    //bu_ptbl_init(&layers[0]->solids, 8, "layers[curr_layer]->solids");
 
     curr_color = layers[0]->color_number;
     curr_layer_name = strdup(layers[0]->name); 
@@ -3743,41 +3755,42 @@ main(int argc, char *argv[])
 	if (layers[i]->color_number < 0)
 	    layers[i]->color_number = 7;
 
-	if (layers[i]->curr_tri || BU_PTBL_LEN(&layers[i]->solids) || layers[i]->m) {
+	if (layers[i]->curr_tri || layers[i]->solids.size() || layers[i]->m) {//BU_PTBL_LEN(&layers[i]->solids) 
 	    fprintf(stderr, "LAYER: %s, color = %d (%d %d %d)\n", layers[i]->name, layers[i]->color_number, V3ARGS(&rgb[layers[i]->color_number*3]));
 	}
 
 	if (layers[i]->curr_tri && layers[i]->vert_tree->curr_vert > 2) {
 	    sprintf(tmp_name, "bot.s%d", i);
-	    // if (mk_bot(out_fp, tmp_name, RT_BOT_SURFACE, RT_BOT_UNORIENTED, 0,
-		//        layers[i]->vert_tree, layers[i]->curr_tri, layers[i]->vert_tree->the_array,
-		//        layers[i]->part_tris, (double *)NULL, (struct bu_bitv *)NULL)) {
-		// fprintf(stderr, "Failed to make Bot\n");
-	    // } else {
-		// (void)mk_addmember(tmp_name, &head, NULL, WMOP_UNION);
-	    // }
+	    if (mk_bot(out_fp, tmp_name, RT_BOT_SURFACE, RT_BOT_UNORIENTED, 0,
+		       layers[i]->vert_tree, layers[i]->curr_tri, layers[i]->vert_tree->the_array,
+		       layers[i]->part_tris, (double *)NULL, (struct bu_bitv *)NULL)) {
+		fprintf(stderr, "Failed to make Bot\n");
+	    } else {
+		(void)mk_addmember(tmp_name, &head, NULL, WMOP_UNION);
+	    }
 	}
 
-	for (j = 0; j < BU_PTBL_LEN(&layers[i]->solids); j++) {
-	    (void)mk_addmember((char *)BU_PTBL_GET(&layers[i]->solids, j), &head, NULL, WMOP_UNION);
-	    free((char *)BU_PTBL_GET(&layers[i]->solids, j)); //"solid_name");
-	}
-
-	// if (layers[i]->m) {
-	//     char name[32];
-	//     struct rt_sketch_internal *skt;
-
-	//     sprintf(name, "sketch.%d", i);
-	//     skt = nmg_wire_edges_to_sketch(layers[i]->m);
-	//     if (skt != NULL) {
-	// 	mk_sketch(out_fp, name, skt);
-	// 	(void) mk_addmember(name, &head, NULL, WMOP_UNION);
-	// 	rt_curve_free(&skt->curve);
-	// 	if (skt->verts)
-	// 	    free(skt->verts); //"free verts");
-	// 	free(skt);// "free sketch");
-	//     }
+	/* obtain dynamic storage for a new wmember structure, we may ignore for std::list */
+	// for (j = 0; j < BU_PTBL_LEN(&layers[i]->solids); j++) {
+	//     (void)mk_addmember((char *)BU_PTBL_GET(&layers[i]->solids, j), &head, NULL, WMOP_UNION);
+	//     free((char *)BU_PTBL_GET(&layers[i]->solids, j)); 
 	// }
+
+	if (layers[i]->m) {
+	    char name[32];
+	    struct rt_sketch_internal *skt;
+
+	    sprintf(name, "sketch.%d", i);
+	    skt = nmg_wire_edges_to_sketch(layers[i]->m);
+	    if (skt != NULL) {
+		mk_sketch(out_fp, name, skt);
+		(void) mk_addmember(name, &head, NULL, WMOP_UNION);
+		rt_curve_free(&skt->curve);
+		if (skt->verts)
+		    free(skt->verts); //"free verts");
+		free(skt);// "free sketch");
+	    }
+	}
 
 	if (layers[i]->line_count) {
 	    fprintf(stderr, "\t%zu lines\n", layers[i]->line_count);
@@ -3859,7 +3872,7 @@ main(int argc, char *argv[])
 	char *top_name = BU_VLS_INIT_ZERO; // variable length string??
 	int count = 0;
 
-	strcpy(&top_name, "all");
+	strcpy(top_name, "all");
 	while (db_lookup(out_fp->dbip, bu_vls_addr(&top_name), LOOKUP_QUIET) != RT_DIR_NULL) {
 	    count++;
 	    bu_vls_trunc(&top_name, 0);
