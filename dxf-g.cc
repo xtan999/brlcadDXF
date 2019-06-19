@@ -2752,7 +2752,7 @@ process_mtext_entities_code(int code)
 	    break;
 	case 0:
 	    if (verbose) {
-		fprintf(stderr, "MTEXT (%s), height = %g, entityHeight = %g, rectWidth = %g\n", (!vls.empty()) ? vls : "NO_NAME", textHeight, entityHeight, rectWidth);//(vls) ? bu_vls_addr(vls)
+		fprintf(stderr, "MTEXT (%s), height = %g, entityHeight = %g, rectWidth = %g\n", (!vls.empty()) ? vls.c_str() : "NO_NAME", textHeight, entityHeight, rectWidth);//(vls) ? bu_vls_addr(vls)
 		fprintf(stderr, "\tattachPoint = %d, charWidth = %g, insertPt = (%g %g %g)\n", attachPoint, charWidth, V3ARGS(insertionPoint));
 	    }
 	    /* draw the text */
