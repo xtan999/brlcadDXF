@@ -65,3 +65,4 @@ Development Note:
 * replace bu_ptbl with std::list, ignore all the bu_ptbl_init function
 * BU_PTBL_LEN(&layers[i]->solids) with layers[i]->solids.size()
 * commented out mk_sph()
+* replaced bu_exit(1, etc) with fprintf error message and exit(1)
