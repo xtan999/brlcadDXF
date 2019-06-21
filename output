@@ -55,7 +55,6 @@ Change state to 1
 54:	0
 55:	0
 56:	ENDSEC
-end of section
 57:	0
 58:	SECTION
 59:	2
@@ -1084,4 +1083,6 @@ changed to layer #1, (m = (nil), s=(nil))
 1077:	278
 1078:	44
 1079:	283
-1080:	
+1080:	0
+1081:	284
+108
