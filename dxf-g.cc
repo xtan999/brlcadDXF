@@ -216,7 +216,7 @@ struct vert_root *create_vert_tree(void){
 	struct vert_root *tree;
 
 	//malloc(sizeof(tree), struct vert_root);
-	malloc(sizeof(tree));
+	tree = (vert_root * )malloc(sizeof(*tree));
 	tree->magic = VERT_TREE_MAGIC;
 	tree->tree_type = TREE_TYPE_VERTS;
 	tree->the_tree = (union vert_tree *)NULL;
@@ -297,7 +297,7 @@ Add_vert( double x, double y, double z, struct vert_root *vert_root, double loca
 
     /* add to the tree also */
     //BU_ALLOC(new_leaf, union vert_tree);
-	malloc(sizeof(new_leaf));
+	new_leaf = (vert_tree*)malloc(sizeof(*new_leaf));
     new_leaf->vleaf.type = VERT_LEAF;
     new_leaf->vleaf.index = vert_root->curr_vert++;
     if ( !vert_root->the_tree ) {
@@ -306,7 +306,7 @@ Add_vert( double x, double y, double z, struct vert_root *vert_root, double loca
     } else if ( ptr && ptr->type == VERT_LEAF ) {
         /* search above ended at a leaf, need to add a node above this leaf and the new leaf */
         //BU_ALLOC(new_node, union vert_tree);
-		malloc(sizeof(new_node));
+		new_node = (vert_tree*)malloc(sizeof(*new_node));
         new_node->vnode.type = VERT_NODE;
 
         /* select the cutting coord based on the biggest difference */
@@ -785,7 +785,7 @@ get_layer()
 	    max_layers += 5;
 	    layers = (struct layer **)realloc(layers, max_layers*sizeof(struct layer *));
 	    for (i = 0; i < 5; i++) {
-		malloc(sizeof(layers[max_layers-i-1])); //bu_alloc
+			layers[max_layers-i-1] = (layer *)malloc(sizeof(*layers[max_layers-i-1])); //bu_alloc
 	    }
 	}
 	curr_layer = next_layer++;
@@ -1100,7 +1100,7 @@ process_blocks_code(int code)
 	    } else if (!strncmp(line, "BLOCK", 5)) {
 		/* start of a new block */
 
-		malloc(sizeof(curr_block));
+		curr_block = (block_list * ) malloc(sizeof(*curr_block));
 		curr_block->offset = ftell(dxf); // dxf file stream ??
 		block_head.push_front(*curr_block);
 		// BU_LIST_INSERT(&(block_head), &(curr_block->l)); //Insert "new" item in front of "old" item.  block_head is the head of the list.
@@ -1619,7 +1619,7 @@ process_insert_entities_code(int code)
 
     if (!new_state) {
 	insert_init(&ins);
-	malloc(sizeof(new_state));
+	new_state = (state_data *)malloc(sizeof(*new_state));
 	*new_state = *curr_state;
 	if (verbose) {
 	    fprintf(stdout, "Created a new state for INSERT\n");
@@ -2957,7 +2957,7 @@ process_dimension_entities_code(int code)
 	    if (block_name != NULL) {
 		/* insert this dimension block */
 		get_layer();
-		malloc(sizeof(new_state)); // bu_alloc
+		new_state = (state_data *)malloc(sizeof(*new_state)); // bu_alloc
 		*new_state = *curr_state;
 		// if (verbose) {
 		//     fprintf(stdout, "Created a new state for DIMENSION\n");
@@ -3745,7 +3745,7 @@ main(int argc, char *argv[])
 
     /* create initial state */
     //BU_ALLOC(curr_state, struct state_data);
-	curr_state = (struct state_data *) malloc(sizeof(curr_state));
+	curr_state = (struct state_data *) malloc(sizeof(*curr_state));
     curr_state->file_offset = 0;
     curr_state->state = UNKNOWN_SECTION;
     curr_state->sub_state = UNKNOWN_ENTITY_STATE;
