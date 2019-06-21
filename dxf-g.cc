@@ -203,6 +203,8 @@
 #define VERT_BLOCK 512                  /**< @brief number of vertices to malloc per call when building the array */ 
 #define BN_CK_VERT_TREE(_p) BU_CKMAG(_p, VERT_TREE_MAGIC, "vert_tree")
 
+static FILE *out_test;
+
 struct vert_root {
      uint32_t magic;
      int tree_type;              /**< @brief vertices or vertices with normals */
@@ -255,7 +257,7 @@ Add_vert( double x, double y, double z, struct vert_root *vert_root, double loca
     //BN_CK_VERT_TREE( vert_root ); 
 
     if ( vert_root->tree_type != TREE_TYPE_VERTS ) {
-        fprintf( stdout,  "Error: Add_vert() called for a tree containing vertices and normals\n" );//bu_bomb
+        fprintf( out_test,  "Error: Add_vert() called for a tree containing vertices and normals\n" );//bu_bomb
     }
 
     VSET( vertex, x, y, z );
@@ -348,17 +350,17 @@ Add_vert( double x, double y, double z, struct vert_root *vert_root, double loca
         prev = ptr;
         if ( vertex[prev->vnode.coord] >= prev->vnode.cut_val ) {
             if ( prev->vnode.higher ) {
-                fprintf( stdout, "higher vertex node already exists in Add_vert()?\n");//bu_bomb
+                fprintf( out_test, "higher vertex node already exists in Add_vert()?\n");//bu_bomb
             }
             prev->vnode.higher = new_leaf;
         } else {
             if ( prev->vnode.lower ) {
-                fprintf( stdout, "lower vertex node already exists in Add_vert()?\n");//bu_bomb
+                fprintf( out_test, "lower vertex node already exists in Add_vert()?\n");//bu_bomb
             }
             prev->vnode.lower = new_leaf;
         }
     } else {
-        fprintf( stdout, "*********ERROR********\n" );
+        fprintf( out_test, "*********ERROR********\n" );
     }
 
     /* return the index into the vertex array */
@@ -757,7 +759,7 @@ get_layer()
     int old_layer=curr_layer;
 
     // if (verbose) {
-	// fprintf(stdout, "get_layer(): state = %d, substate = %d\n", curr_state->state, curr_state->sub_state);
+	// fprintf(out_test, "get_layer(): state = %d, substate = %d\n", curr_state->state, curr_state->sub_state);
     // }
 
     /* do we already have a layer by this name and color */
@@ -780,7 +782,7 @@ get_layer()
 	/* add a new layer */
 	if (next_layer >= max_layers) {
 	    if (verbose) {
-		fprintf(stdout, "Creating new block of layers\n");
+		fprintf(out_test, "Creating new block of layers\n");
 	    }
 	    max_layers += 5;
 	    layers = (struct layer **)realloc(layers, max_layers*sizeof(struct layer *));
@@ -790,7 +792,7 @@ get_layer()
 	}
 	curr_layer = next_layer++;
 	if (verbose) {
-	    fprintf(stdout, "New layer: %s, color number: %d", line, curr_color);
+	    fprintf(out_test, "New layer: %s, color number: %d", line, curr_color);
 	}
 	layers[curr_layer]->name = strdup(curr_layer_name);
 	layers[curr_layer]->name = curr_layer_name;
@@ -805,12 +807,12 @@ get_layer()
 	layers[curr_layer]->color_number = curr_color;
 	//bu_ptbl_init(&layers[curr_layer]->solids, 8, "layers[curr_layer]->solids");
 	if (verbose) {
-	    fprintf(stdout, "\tNew layer name: %s\n", layers[curr_layer]->name);
+	    fprintf(out_test, "\tNew layer name: %s\n", layers[curr_layer]->name);
 	}
     }
 
     if (verbose && curr_layer != old_layer) {
-	fprintf(stdout, "changed to layer #%d, (m = %p, s=%p)\n",
+	fprintf(out_test, "changed to layer #%d, (m = %p, s=%p)\n",
 	       curr_layer,
 	       (void *)layers[curr_layer]->m,
 	       (void *)layers[curr_layer]->s);
@@ -837,11 +839,11 @@ void
 add_triangle(int v1, int v2, int v3, int layer)
 {
     if (verbose) {
-	fprintf(stdout, "Adding triangle %d %d %d, to layer %s\n", v1, v2, v3, layers[layer]->name);
+	fprintf(out_test, "Adding triangle %d %d %d, to layer %s\n", v1, v2, v3, layers[layer]->name);
     }
     if (v1 == v2 || v2 == v3 || v3 == v1) {
 	if (verbose) {
-	    fprintf(stdout, "\tSkipping degenerate triangle\n");
+	    fprintf(out_test, "\tSkipping degenerate triangle\n");
 	}
 	return;
     }
@@ -881,45 +883,45 @@ process_unknown_code(int code)
 	    if (!strncmp(line, "HEADER", 6)) {
 		curr_state->state = HEADER_SECTION;
 		if (verbose) {
-		    fprintf(stdout, "Change state to %d\n", curr_state->state);
+		    fprintf(out_test, "Change state to %d\n", curr_state->state);
 		}
 		break;
 	    } else if (!strncmp(line, "CLASSES", 7)) {
 		curr_state->state = CLASSES_SECTION;
 		if (verbose) {
-		    fprintf(stdout, "Change state to %d\n", curr_state->state);
+		    fprintf(out_test, "Change state to %d\n", curr_state->state);
 		}
 		break;
 	    } else if (!strncmp(line, "TABLES", 6)) {
 		curr_state->state = TABLES_SECTION;
 		curr_state->sub_state = UNKNOWN_TABLE_STATE;
 		if (verbose) {
-		    fprintf(stdout, "Change state to %d\n", curr_state->state);
+		    fprintf(out_test, "Change state to %d\n", curr_state->state);
 		}
 		break;
 	    } else if (!strncmp(line, "BLOCKS", 6)) {
 		curr_state->state = BLOCKS_SECTION;
 		if (verbose) {
-		    fprintf(stdout, "Change state to %d\n", curr_state->state);
+		    fprintf(out_test, "Change state to %d\n", curr_state->state);
 		}
 		break;
 	    } else if (!strncmp(line, "ENTITIES", 8)) {
 		curr_state->state = ENTITIES_SECTION;
 		curr_state->sub_state =UNKNOWN_ENTITY_STATE;
 		if (verbose) {
-		    fprintf(stdout, "Change state to %d\n", curr_state->state);
+		    fprintf(out_test, "Change state to %d\n", curr_state->state);
 		}
 		break;
 	    } else if (!strncmp(line, "OBJECTS", 7)) {
 		curr_state->state = OBJECTS_SECTION;
 		if (verbose) {
-		    fprintf(stdout, "Change state to %d\n", curr_state->state);
+		    fprintf(out_test, "Change state to %d\n", curr_state->state);
 		}
 		break;
 	    } else if (!strncmp(line, "THUMBNAILIMAGE", 14)) {
 		curr_state->state = THUMBNAILIMAGE_SECTION;
 		if (verbose) {
-		    fprintf(stdout, "Change state to %d\n", curr_state->state);
+		    fprintf(out_test, "Change state to %d\n", curr_state->state);
 		}
 		break;
 	    }
@@ -1043,13 +1045,13 @@ process_tables_layer_code(int code)
 	    }
 	    curr_layer_name = make_brlcad_name(line);
 	    if (verbose) {
-		fprintf(stdout, "In LAYER in TABLES, layer name = %s\n", curr_layer_name);
+		fprintf(out_test, "In LAYER in TABLES, layer name = %s\n", curr_layer_name);
 	    }
 	    break;
 	case 62:	/* layer color */
 	    curr_color = atoi(line);
 	    if (verbose) {
-		fprintf(stdout, "In LAYER in TABLES, layer color = %d\n", curr_color);
+		fprintf(out_test, "In LAYER in TABLES, layer color = %d\n", curr_color);
 	    }
 	    break;
 	case 0:		/* text string */
@@ -1111,7 +1113,7 @@ process_blocks_code(int code)
 	    if (curr_block && curr_block->block_name == NULL) {
 		curr_block->block_name = strdup(line);
 		if (verbose) {
-		    fprintf(stdout, "BLOCK %s begins at %jd\n",
+		    fprintf(out_test, "BLOCK %s begins at %jd\n",
 			   curr_block->block_name,
 			   (intmax_t)curr_block->offset);
 		}
@@ -1154,7 +1156,7 @@ add_polyline_vertex(double x, double y, double z)
     polyline_vertex_count++;
 
     if (verbose) {
-	fprintf(stdout, "Added polyline vertex (%g %g %g) #%d\n", x, y, z, polyline_vertex_count);
+	fprintf(out_test, "Added polyline vertex (%g %g %g) #%d\n", x, y, z, polyline_vertex_count);
     }
 }
 
@@ -1255,7 +1257,7 @@ process_entities_polyline_vertex_code(int code)
 		//polyline_vert_indices[polyline_vert_indices_count++] = bn_vert_tree_add(layers[curr_layer]->vert_tree, tmp_pt2[X], tmp_pt2[Y], tmp_pt2[Z], tol_sq);
 		polyline_vert_indices[polyline_vert_indices_count++] = Add_vert(tmp_pt2[X], tmp_pt2[Y], tmp_pt2[Z],layers[curr_layer]->vert_tree, tol_sq);
 		if (verbose) {
-		    fprintf(stdout, "Added 3D mesh vertex (%f %f %f) index = %d, number = %d\n",
+		    fprintf(out_test, "Added 3D mesh vertex (%f %f %f) index = %d, number = %d\n",
 			   x, y, z, polyline_vert_indices[polyline_vert_indices_count-1],
 			   polyline_vert_indices_count-1);
 		}
@@ -1264,7 +1266,7 @@ process_entities_polyline_vertex_code(int code)
 	    }
 	    curr_state->sub_state = POLYLINE_ENTITY_STATE;
 	    if (verbose) {
-		fprintf(stdout, "sub_state changed to %d\n", curr_state->sub_state);
+		fprintf(out_test, "sub_state changed to %d\n", curr_state->sub_state);
 	    }
 	    return process_entities_code[curr_state->sub_state](code);
 	case 999:	/* comment */
@@ -1304,7 +1306,7 @@ process_entities_polyline_code(int code)
 		    if (polyline_vert_indices_count == 0) {
 			return 0;
 		    } else if (polyline_vert_indices_count != mesh_m_count * mesh_n_count) {
-			fprintf(stdout, "Incorrect number of vertices for polygon mesh!!!\n");
+			fprintf(out_test, "Incorrect number of vertices for polygon mesh!!!\n");
 			polyline_vert_indices_count = 0;
 		    } else {
 			int i, j;
@@ -1318,7 +1320,7 @@ process_entities_polyline_code(int code)
 
 			if (mesh_m_count < 2) {
 			    if (mesh_n_count > 4) {
-				fprintf(stdout, "Cannot handle polyline meshes with m<2 and n>4\n");
+				fprintf(out_test, "Cannot handle polyline meshes with m<2 and n>4\n");
 				polyline_vert_indices_count = 0;
 				polyline_vert_indices_count = 0;
 				break;
@@ -1376,7 +1378,7 @@ process_entities_polyline_code(int code)
 			//     v2 = eu->eumate_p->vu_p->v_p;
 			//     nmg_vertex_gv(v2, &polyline_verts[(i+1)*3]);
 			//     if (verbose) {
-			// 	fprintf(stdout, "Wire edge (polyline): (%g %g %g) <-> (%g %g %g)\n",
+			// 	fprintf(out_test, "Wire edge (polyline): (%g %g %g) <-> (%g %g %g)\n",
 			// 	       V3ARGS(v1->vg_p->coord),
 			// 	       V3ARGS(v2->vg_p->coord));
 			//     }
@@ -1388,7 +1390,7 @@ process_entities_polyline_code(int code)
 			//     v2 = v0;
 			//     (void)nmg_me(v1, v2, layers[curr_layer]->s);
 			//      if (verbose) {
-			// 	 fprintf(stdout, "Wire edge (closing polyline): (%g %g %g) <-> (%g %g %g)\n",
+			// 	 fprintf(out_test, "Wire edge (closing polyline): (%g %g %g) <-> (%g %g %g)\n",
 			// 	        V3ARGS(v1->vg_p->coord),
 			// 	        V3ARGS(v2->vg_p->coord));
 			//      }
@@ -1402,18 +1404,18 @@ process_entities_polyline_code(int code)
 		curr_state->state = ENTITIES_SECTION;
 		curr_state->sub_state = UNKNOWN_ENTITY_STATE;
 		if (verbose) {
-		    fprintf(stdout, "sub_state changed to %d\n", curr_state->sub_state);
+		    fprintf(out_test, "sub_state changed to %d\n", curr_state->sub_state);
 		}
 		break;
 	    } else if (!strncmp(line, "VERTEX", 6)) {
 			if (verbose)
-				fprintf(stdout, "Found a POLYLINE VERTEX\n");
+				fprintf(out_test, "Found a POLYLINE VERTEX\n");
 		curr_state->sub_state = POLYLINE_VERTEX_ENTITY_STATE;
 		process_entities_code[POLYLINE_VERTEX_ENTITY_STATE](-1);
 		break;
 	    } else {
 		if (verbose) {
-		    fprintf(stdout, "Unrecognized text string while in polyline entity: %s\n", line);
+		    fprintf(out_test, "Unrecognized text string while in polyline entity: %s\n", line);
 		}
 		break;
 	    }
@@ -1464,102 +1466,102 @@ process_entities_unknown_code(int code)
 		break;
 	    } else if (!strncmp(line, "POLYLINE", 8)) {
 		if (verbose)
-		    fprintf(stdout, "Found a POLYLINE\n");
+		    fprintf(out_test, "Found a POLYLINE\n");
 		curr_state->sub_state = POLYLINE_ENTITY_STATE;
 		if (verbose) {
-		    fprintf(stdout, "sub_state changed to %d\n", curr_state->sub_state);
+		    fprintf(out_test, "sub_state changed to %d\n", curr_state->sub_state);
 		}
 		break;
 	    } else if (!strncmp(line, "LWPOLYLINE", 10)) {
 		if (verbose)
-		    fprintf(stdout, "Found a LWPOLYLINE\n");
+		    fprintf(out_test, "Found a LWPOLYLINE\n");
 		curr_state->sub_state = LWPOLYLINE_ENTITY_STATE;
 		if (verbose) {
-		    fprintf(stdout, "sub_state changed to %d\n", curr_state->sub_state);
+		    fprintf(out_test, "sub_state changed to %d\n", curr_state->sub_state);
 		}
 		break;
 	    } else if (!strncmp(line, "3DFACE", 6)) {
 		curr_state->sub_state = FACE3D_ENTITY_STATE;
 		if (verbose) {
-		    fprintf(stdout, "sub_state changed to %d\n", curr_state->sub_state);
+		    fprintf(out_test, "sub_state changed to %d\n", curr_state->sub_state);
 		}
 		break;
 	    } else if (0 != strcmp(line, "CIRCLE")) {
 		curr_state->sub_state = CIRCLE_ENTITY_STATE;
 		if (verbose) {
-		    fprintf(stdout, "sub_state changed to %d\n", curr_state->sub_state);
+		    fprintf(out_test, "sub_state changed to %d\n", curr_state->sub_state);
 		}
 		break;
 	    } else if (0 != strcmp(line, "ELLIPSE")) {
 		curr_state->sub_state = ELLIPSE_ENTITY_STATE;
 		if (verbose) {
-		    fprintf(stdout, "sub_state changed to %d\n", curr_state->sub_state);
+		    fprintf(out_test, "sub_state changed to %d\n", curr_state->sub_state);
 		}
 		break;
 	    } else if (0 != strcmp(line, "SPLINE")) {
 		curr_state->sub_state = SPLINE_ENTITY_STATE;
 		if (verbose) {
-		    fprintf(stdout, "sub_state changed to %d\n", curr_state->sub_state);
+		    fprintf(out_test, "sub_state changed to %d\n", curr_state->sub_state);
 		}
 		break;
 	    } else if (0 != strcmp(line, "ARC")) {
 		curr_state->sub_state = ARC_ENTITY_STATE;
 		if (verbose) {
-		    fprintf(stdout, "sub_state changed to %d\n", curr_state->sub_state);
+		    fprintf(out_test, "sub_state changed to %d\n", curr_state->sub_state);
 		}
 		break;
 	    } else if (0 != strcmp(line, "DIMENSION")) {
 		curr_state->sub_state = DIMENSION_ENTITY_STATE;
 		if (verbose) {
-		    fprintf(stdout, "sub_state changed to %d\n", curr_state->sub_state);
+		    fprintf(out_test, "sub_state changed to %d\n", curr_state->sub_state);
 		}
 		break;
 	    } else if (!strncmp(line, "LINE", 4)) {
 		curr_state->sub_state = LINE_ENTITY_STATE;
 		if (verbose) {
-		    fprintf(stdout, "sub_state changed to %d\n", curr_state->sub_state);
+		    fprintf(out_test, "sub_state changed to %d\n", curr_state->sub_state);
 		}
 		break;
 	    } else if (0 != strcmp(line, "POINT")) {
 		curr_state->sub_state = POINT_ENTITY_STATE;
 		if (verbose) {
-		    fprintf(stdout, "sub_state changed to %d\n", curr_state->sub_state);
+		    fprintf(out_test, "sub_state changed to %d\n", curr_state->sub_state);
 		}
 		break;
 	    } else if (0 != strcmp(line, "LEADER")) {
 		curr_state->sub_state = LEADER_ENTITY_STATE;
 		if (verbose) {
-		    fprintf(stdout, "sub_state changed to %d\n", curr_state->sub_state);
+		    fprintf(out_test, "sub_state changed to %d\n", curr_state->sub_state);
 		}
 		break;
 	    } else if (0 != strcmp(line, "MTEXT")) {
 		curr_state->sub_state = MTEXT_ENTITY_STATE;
 		if (verbose) {
-		    fprintf(stdout, "sub_state changed to %d\n", curr_state->sub_state);
+		    fprintf(out_test, "sub_state changed to %d\n", curr_state->sub_state);
 		}
 		break;
 	    } else if (0 != strcmp(line, "TEXT")) {
 		curr_state->sub_state = TEXT_ENTITY_STATE;
 		if (verbose) {
-		    fprintf(stdout, "sub_state changed to %d\n", curr_state->sub_state);
+		    fprintf(out_test, "sub_state changed to %d\n", curr_state->sub_state);
 		}
 		break;
 	    } else if (0 != strcmp(line, "ATTRIB")) {
 		curr_state->sub_state = ATTRIB_ENTITY_STATE;
 		if (verbose) {
-		    fprintf(stdout, "sub_state changed to %d\n", curr_state->sub_state);
+		    fprintf(out_test, "sub_state changed to %d\n", curr_state->sub_state);
 		}
 		break;
 	    } else if (0 != strcmp(line, "ATTDEF")) {
 		curr_state->sub_state = ATTDEF_ENTITY_STATE;
 		if (verbose) {
-		    fprintf(stdout, "sub_state changed to %d\n", curr_state->sub_state);
+		    fprintf(out_test, "sub_state changed to %d\n", curr_state->sub_state);
 		}
 		break;
 	    } else if (0 != strcmp(line, "SOLID")) {
 		curr_state->sub_state = SOLID_ENTITY_STATE;
 		if (verbose) {
-		    fprintf(stdout, "sub_state changed to %d\n", curr_state->sub_state);
+		    fprintf(out_test, "sub_state changed to %d\n", curr_state->sub_state);
 		}
 		break;
 	    } else if (!strncmp(line, "VIEWPORT", 8)) {
@@ -1568,7 +1570,7 @@ process_entities_unknown_code(int code)
 	    } else if (!strncmp(line, "INSERT", 6)) {
 		curr_state->sub_state = INSERT_ENTITY_STATE;
 		if (verbose) {
-		    fprintf(stdout, "sub_state changed to %d\n", curr_state->sub_state);
+		    fprintf(out_test, "sub_state changed to %d\n", curr_state->sub_state);
 		}
 		break;
 	    } else if (0 != strncmp(line, "ENDBLK", 6)) {
@@ -1577,7 +1579,7 @@ process_entities_unknown_code(int code)
 		//BU_LIST_POP(state_data, &state_stack, curr_state); // unsure ??
 		state_stack.pop_back();
 		if (!curr_state) {
-		    fprintf(stdout, "ERROR: end of block encountered while not inserting!!!\n");
+		    fprintf(out_test, "ERROR: end of block encountered while not inserting!!!\n");
 		    curr_state = tmp_state;
 		    break;
 		}
@@ -1585,11 +1587,11 @@ process_entities_unknown_code(int code)
 		fseek(dxf, curr_state->file_offset, SEEK_SET);// file system fseek ??
 		curr_state->sub_state = UNKNOWN_ENTITY_STATE;
 		if (verbose) {
-		    fprintf(stdout, "Popped state at end of inserted block (seeked to %jd)\n", (intmax_t)curr_state->file_offset);
+		    fprintf(out_test, "Popped state at end of inserted block (seeked to %jd)\n", (intmax_t)curr_state->file_offset);
 		}
 		break;
 	    } else {
-		fprintf(stdout, "Unrecognized entity type encountered (ignoring): %s\n",
+		fprintf(out_test, "Unrecognized entity type encountered (ignoring): %s\n",
 		       line);
 		break;
 	    }
@@ -1622,7 +1624,7 @@ process_insert_entities_code(int code)
 	new_state = (state_data *)malloc(sizeof(*new_state));
 	*new_state = *curr_state;
 	if (verbose) {
-	    fprintf(stdout, "Created a new state for INSERT\n");
+	    fprintf(out_test, "Created a new state for INSERT\n");
 	}
     }
 
@@ -1641,13 +1643,13 @@ process_insert_entities_code(int code)
 	    }
 		//BU_LIST_IS_HEAD(blk, &block_head)
 	    if (block_list_is_head(*blk, block_head)){
-		fprintf(stdout, "ERROR: INSERT references non-existent block (%s)\n", line);
-		fprintf(stdout, "\tignoring missing block\n");
+		fprintf(out_test, "ERROR: INSERT references non-existent block (%s)\n", line);
+		fprintf(out_test, "\tignoring missing block\n");
 		blk = NULL;
 	    }
 	    new_state->curr_block = blk;
 	    if (verbose && blk) {
-		fprintf(stdout, "Inserting block %s\n", blk->block_name);
+		fprintf(out_test, "Inserting block %s\n", blk->block_name);
 	    }
 	    break;
 	case 10:
@@ -1671,7 +1673,7 @@ process_insert_entities_code(int code)
 	case 70:
 	case 71:
 	    if (atoi(line) != 1) {
-			fprintf(stdout, "Cannot yet handle insertion of a pattern\n\tignoring\n");
+			fprintf(out_test, "Cannot yet handle insertion of a pattern\n\tignoring\n");
 	    }
 	    break;
 	case 44:
@@ -1702,8 +1704,8 @@ process_insert_entities_code(int code)
 		curr_state->state = ENTITIES_SECTION;
 		curr_state->sub_state = UNKNOWN_ENTITY_STATE;
 		if (verbose) {
-		    fprintf(stdout, "Changing state for INSERT\n");
-		    fprintf(stdout, "seeked to %jd\n", (intmax_t)curr_state->curr_block->offset);
+		    fprintf(out_test, "Changing state for INSERT\n");
+		    fprintf(out_test, "seeked to %jd\n", (intmax_t)curr_state->curr_block->offset);
 		    //bn_mat_print("state xform", curr_state->xform);
 		}
 	    }
@@ -1731,7 +1733,7 @@ process_solid_entities_code(int code)
 	    }
 	    curr_layer_name = make_brlcad_name(line);
 	    // if (verbose) {
-		// fprintf(stdout, "LINE is in layer: %s\n", curr_layer_name);
+		// fprintf(out_test, "LINE is in layer: %s\n", curr_layer_name);
 	    // }
 	    break;
 	case 10:
@@ -1752,7 +1754,7 @@ process_solid_entities_code(int code)
 	    coord = code / 10 - 1;
 	    solid_pt[vert_no][coord] = atof(line) * units_conv[units] * scale_factor;
 	    if (verbose) {
-		fprintf(stdout, "SOLID vertex #%d coord #%d = %g\n", vert_no, coord, solid_pt[vert_no][coord]);
+		fprintf(out_test, "SOLID vertex #%d coord #%d = %g\n", vert_no, coord, solid_pt[vert_no][coord]);
 	    }
 	    break;
 	case 62:	/* color number */
@@ -1762,7 +1764,7 @@ process_solid_entities_code(int code)
 	    /* end of this solid */
 	    get_layer();
 	    if (verbose) {
-		fprintf(stdout, "Found end of SOLID\n");
+		fprintf(out_test, "Found end of SOLID\n");
 	    }
 
 	    layers[curr_layer]->solid_count++;
@@ -1788,7 +1790,7 @@ process_solid_entities_code(int code)
 		//     nmg_vertex_gv(eu->eumate_p->vu_p->v_p, solid_pt[vert_no]);
 		//     v1 = eu->eumate_p->vu_p->v_p;
 		//     if (verbose) {
-		// 	fprintf(stdout, "Wire edge (solid): (%g %g %g) <-> (%g %g %g)\n",
+		// 	fprintf(out_test, "Wire edge (solid): (%g %g %g) <-> (%g %g %g)\n",
 		// 	       V3ARGS(eu->vu_p->v_p->vg_p->coord),
 		// 	       V3ARGS(eu->eumate_p->vu_p->v_p->vg_p->coord));
 		//     }
@@ -1822,7 +1824,7 @@ process_lwpolyline_entities_code(int code)
 	    }
 	    curr_layer_name = make_brlcad_name(line);
 	    if (verbose) {
-		fprintf(stdout, "LINE is in layer: %s\n", curr_layer_name);
+		fprintf(out_test, "LINE is in layer: %s\n", curr_layer_name);
 	    }
 	    break;
 	case 90:
@@ -1831,13 +1833,13 @@ process_lwpolyline_entities_code(int code)
 	case 10:
 	    x = atof(line) * units_conv[units] * scale_factor;
 	    if (verbose) {
-		fprintf(stdout, "LWPolyLine vertex #%d (x) = %g\n", vert_no, x);
+		fprintf(out_test, "LWPolyLine vertex #%d (x) = %g\n", vert_no, x);
 	    }
 	    break;
 	case 20:
 	    y = atof(line) * units_conv[units] * scale_factor;
 	    if (verbose) {
-		fprintf(stdout, "LWPolyLine vertex #%d (y) = %g\n", vert_no, y);
+		fprintf(out_test, "LWPolyLine vertex #%d (y) = %g\n", vert_no, y);
 	    }
 	    add_polyline_vertex(x, y, 0.0);
 	    break;
@@ -1851,7 +1853,7 @@ process_lwpolyline_entities_code(int code)
 	    /* end of this line */
 	    get_layer();
 	    if (verbose) {
-		fprintf(stdout, "Found end of LWPOLYLINE\n");
+		fprintf(out_test, "Found end of LWPOLYLINE\n");
 	    }
 
 	    layers[curr_layer]->lwpolyline_count++;
@@ -1885,7 +1887,7 @@ process_lwpolyline_entities_code(int code)
 		//     v2 = eu->eumate_p->vu_p->v_p;
 		//     nmg_vertex_gv(v2, &polyline_verts[(i+1)*3]);
 		//     if (verbose) {
-		// 	fprintf(stdout, "Wire edge (lwpolyline): (%g %g %g) <-> (%g %g %g)\n",
+		// 	fprintf(out_test, "Wire edge (lwpolyline): (%g %g %g) <-> (%g %g %g)\n",
 		// 	       V3ARGS(v1->vg_p->coord),
 		// 	       V3ARGS(v2->vg_p->coord));
 		//     }
@@ -1897,7 +1899,7 @@ process_lwpolyline_entities_code(int code)
 		//     v2 = v0;
 		//     (void)nmg_me(v1, v2, layers[curr_layer]->s);
 		//     if (verbose) {
-		// 	fprintf(stdout, "Wire edge (closing lwpolyline): (%g %g %g) <-> (%g %g %g)\n",
+		// 	fprintf(out_test, "Wire edge (closing lwpolyline): (%g %g %g) <-> (%g %g %g)\n",
 		// 	       V3ARGS(v1->vg_p->coord),
 		// 	       V3ARGS(v2->vg_p->coord));
 		//     }
@@ -1930,7 +1932,7 @@ process_line_entities_code(int code)
 	    }
 	    curr_layer_name = make_brlcad_name(line);
 	    if (verbose) {
-		fprintf(stdout, "LINE is in layer: %s\n", curr_layer_name);
+		fprintf(out_test, "LINE is in layer: %s\n", curr_layer_name);
 	    }
 	    break;
 	case 10:
@@ -1943,7 +1945,7 @@ process_line_entities_code(int code)
 	    coord = code / 10 - 1;
 	    line_pt[vert_no][coord] = atof(line) * units_conv[units] * scale_factor;
 	    if (verbose) {
-		fprintf(stdout, "LINE vertex #%d coord #%d = %g\n", vert_no, coord, line_pt[vert_no][coord]);
+		fprintf(out_test, "LINE vertex #%d coord #%d = %g\n", vert_no, coord, line_pt[vert_no][coord]);
 	    }
 	    break;
 	case 62:	/* color number */
@@ -1953,7 +1955,7 @@ process_line_entities_code(int code)
 	    /* end of this line */
 	    get_layer();
 	    if (verbose) {
-		fprintf(stdout, "Found end of LINE\n");
+		fprintf(out_test, "Found end of LINE\n");
 	    }
 
 	    layers[curr_layer]->line_count++;
@@ -1972,7 +1974,7 @@ process_line_entities_code(int code)
 	    // nmg_vertex_gv(eu->vu_p->v_p, line_pt[0]);
 	    // nmg_vertex_gv(eu->eumate_p->vu_p->v_p, line_pt[1]);
 	    // if (verbose) {
-		// fprintf(stdout, "Wire edge (line): (%g %g %g) <-> (%g %g %g)\n",
+		// fprintf(out_test, "Wire edge (line): (%g %g %g) <-> (%g %g %g)\n",
 		//        V3ARGS(eu->vu_p->v_p->vg_p->coord),
 		//        V3ARGS(eu->eumate_p->vu_p->v_p->vg_p->coord));
 	    // }
@@ -2042,7 +2044,7 @@ process_ellipse_entities_code(int code)
 
 	    get_layer();
 	    if (verbose) {
-		fprintf(stdout, "Found an ellipse\n");
+		fprintf(out_test, "Found an ellipse\n");
 	    }
 
 	    // if (!layers[curr_layer]->m) {
@@ -2072,14 +2074,14 @@ process_ellipse_entities_code(int code)
 	    }
 
 	    if (verbose) {
-		fprintf(stdout, "Ellipse:\n");
-		fprintf(stdout, "\tcenter = (%g %g %g)\n", V3ARGS(center));
-		fprintf(stdout, "\tmajorAxis = (%g %g %g)\n", V3ARGS(majorAxis));
-		fprintf(stdout, "\txdir = (%g %g %g)\n", V3ARGS(xdir));
-		fprintf(stdout, "\tydir = (%g %g %g)\n", V3ARGS(ydir));
-		fprintf(stdout, "\tradii = %g %g\n", majorRadius, minorRadius);
-		fprintf(stdout, "\tangles = %g %g\n", startAngle, endAngle);
-		fprintf(stdout, "\tfull circle = %d\n", fullCircle);
+		fprintf(out_test, "Ellipse:\n");
+		fprintf(out_test, "\tcenter = (%g %g %g)\n", V3ARGS(center));
+		fprintf(out_test, "\tmajorAxis = (%g %g %g)\n", V3ARGS(majorAxis));
+		fprintf(out_test, "\txdir = (%g %g %g)\n", V3ARGS(xdir));
+		fprintf(out_test, "\tydir = (%g %g %g)\n", V3ARGS(ydir));
+		fprintf(out_test, "\tradii = %g %g\n", majorRadius, minorRadius);
+		fprintf(out_test, "\tangles = %g %g\n", startAngle, endAngle);
+		fprintf(out_test, "\tfull circle = %d\n", fullCircle);
 	    }
 		// clean till here
 	    /* make nmg wire edges */
@@ -2120,7 +2122,7 @@ process_ellipse_entities_code(int code)
 		//     nmg_vertex_gv(v2, p1);
 		// }
 		// if (verbose) {
-		//     fprintf(stdout, "Wire edge (ellipse): (%g %g %g) <-> (%g %g %g)\n",
+		//     fprintf(out_test, "Wire edge (ellipse): (%g %g %g) <-> (%g %g %g)\n",
 		// 	   V3ARGS(v1->vg_p->coord),
 		// 	   V3ARGS(v2->vg_p->coord));
 		// }
@@ -2167,7 +2169,7 @@ process_circle_entities_code(int code)
 	    coord = code / 10 - 1;
 	    center[coord] = atof(line) * units_conv[units] * scale_factor;
 	    if (verbose) {
-		fprintf(stdout, "CIRCLE center coord #%d = %g\n", coord, center[coord]);
+		fprintf(out_test, "CIRCLE center coord #%d = %g\n", coord, center[coord]);
 	    }
 	    break;
 	case 40:
@@ -2183,7 +2185,7 @@ process_circle_entities_code(int code)
 
 	    get_layer();
 	    if (verbose) {
-		fprintf(stdout, "Found a circle\n");
+		fprintf(out_test, "Found a circle\n");
 	    }
 
 	    // if (!layers[curr_layer]->m) {
@@ -2225,7 +2227,7 @@ process_circle_entities_code(int code)
 		//     nmg_vertex_gv(v2, circle_pts[i+1]);
 		// }
 		// if (verbose) {
-		//     fprintf(stdout, "Wire edge (circle): (%g %g %g) <-> (%g %g %g)\n",
+		//     fprintf(out_test, "Wire edge (circle): (%g %g %g) <-> (%g %g %g)\n",
 		// 	   V3ARGS(v1->vg_p->coord),
 		// 	   V3ARGS(v2->vg_p->coord));
 		// }
@@ -2439,7 +2441,7 @@ drawString(char *theText, double *firstAlignmentPoint, double *secondAlignmentPo
 	// nmg_vlist_to_eu(&vhead, layers[curr_layer]->s);
 	// BN_FREE_VLIST(&free_hd, &vhead);
     } else {
-	fprintf(stdout, "cannot handle this alignment: horiz = %d, vert = %d\n", horizAlignment, vertAlignment);
+	fprintf(out_test, "cannot handle this alignment: horiz = %d, vert = %d\n", horizAlignment, vertAlignment);
     }
 
     free(copyOfText);
@@ -2573,7 +2575,7 @@ process_leader_entities_code(int code)
 	    }
 	    curr_layer_name = make_brlcad_name(line);
 	    if (verbose) {
-		fprintf(stdout, "LINE is in layer: %s\n", curr_layer_name);
+		fprintf(out_test, "LINE is in layer: %s\n", curr_layer_name);
 	    }
 	    break;
 	case 62:	/* color number */
@@ -2648,7 +2650,7 @@ process_leader_entities_code(int code)
 	case 30:
 	    pt[Z] = atof(line);
 	    if (verbose) {
-		fprintf(stdout, "LEADER vertex #%d = (%g %g %g)\n", vertNo, V3ARGS(pt));
+		fprintf(out_test, "LEADER vertex #%d = (%g %g %g)\n", vertNo, V3ARGS(pt));
 	    }
 	    MAT4X3PNT(tmp_pt, curr_state->xform, pt);
 	    add_polyline_vertex(V3ARGS(tmp_pt));
@@ -2657,7 +2659,7 @@ process_leader_entities_code(int code)
 	    /* end of this line */
 	    get_layer();
 	    if (verbose) {
-		fprintf(stdout, "Found end of LEADER: arrowhead flag = %d\n", arrowHeadFlag);
+		fprintf(out_test, "Found end of LEADER: arrowhead flag = %d\n", arrowHeadFlag);
 	    }
 
 	    layers[curr_layer]->leader_count++;
@@ -2676,7 +2678,7 @@ process_leader_entities_code(int code)
 		//     v2 = eu->eumate_p->vu_p->v_p;
 		//     nmg_vertex_gv(v2, &polyline_verts[(i+1)*3]);
 		//     if (verbose) {
-		// 	fprintf(stdout, "Wire edge (LEADER): (%g %g %g) <-> (%g %g %g)\n",
+		// 	fprintf(out_test, "Wire edge (LEADER): (%g %g %g) <-> (%g %g %g)\n",
 		// 	       V3ARGS(v1->vg_p->coord),
 		// 	       V3ARGS(v2->vg_p->coord));
 		//     }
@@ -2778,8 +2780,8 @@ process_mtext_entities_code(int code)
 	    break;
 	case 0:
 	    if (verbose) {
-		fprintf(stdout, "MTEXT (%s), height = %g, entityHeight = %g, rectWidth = %g\n", (!vls.empty()) ? vls.c_str() : "NO_NAME", textHeight, entityHeight, rectWidth);//(vls) ? bu_vls_addr(vls)
-		fprintf(stdout, "\tattachPoint = %d, charWidth = %g, insertPt = (%g %g %g)\n", attachPoint, charWidth, V3ARGS(insertionPoint));
+		fprintf(out_test, "MTEXT (%s), height = %g, entityHeight = %g, rectWidth = %g\n", (!vls.empty()) ? vls.c_str() : "NO_NAME", textHeight, entityHeight, rectWidth);//(vls) ? bu_vls_addr(vls)
+		fprintf(out_test, "\tattachPoint = %d, charWidth = %g, insertPt = (%g %g %g)\n", attachPoint, charWidth, V3ARGS(insertionPoint));
 	    }
 	    /* draw the text */
 	    get_layer();
@@ -2897,7 +2899,7 @@ process_text_attrib_entities_code(int code)
 	case 0:
 	    if (theText != NULL) {
 		if (verbose) {
-		    fprintf(stdout, "TEXT (%s), height = %g, scale = %g\n", theText, textHeight, textScale);
+		    fprintf(out_test, "TEXT (%s), height = %g, scale = %g\n", theText, textHeight, textScale);
 		}
 		/* draw the text */
 		get_layer();
@@ -2960,7 +2962,7 @@ process_dimension_entities_code(int code)
 		new_state = (state_data *)malloc(sizeof(*new_state)); // bu_alloc
 		*new_state = *curr_state;
 		// if (verbose) {
-		//     fprintf(stdout, "Created a new state for DIMENSION\n");
+		//     fprintf(out_test, "Created a new state for DIMENSION\n");
 		// }
 		for (auto blk : block_head) {//BU_LIST_FOR(blk, block_list, &block_head)
 		    if (block_name) {
@@ -2970,13 +2972,13 @@ process_dimension_entities_code(int code)
 		    }
 		}
 		if (block_list_is_head(*blk, block_head)) {
-		    // fprintf(stdout, "ERROR: DIMENSION references non-existent block (%s)\n", block_name);
-		    // fprintf(stdout, "\tignoring missing block\n");
+		    // fprintf(out_test, "ERROR: DIMENSION references non-existent block (%s)\n", block_name);
+		    // fprintf(out_test, "\tignoring missing block\n");
 		    blk = NULL;
 		}
 		new_state->curr_block = blk;
 		// if (verbose && blk) {
-		//     fprintf(stdout, "Inserting block %s\n", blk->block_name);
+		//     fprintf(out_test, "Inserting block %s\n", blk->block_name);
 		// }
 
 		if (block_name) {
@@ -2992,8 +2994,8 @@ process_dimension_entities_code(int code)
 		    curr_state->state = ENTITIES_SECTION;
 		    curr_state->sub_state = UNKNOWN_ENTITY_STATE;
 		    // if (verbose) {
-			// fprintf(stdout, "Changing state for INSERT\n");
-			// fprintf(stdout, "seeked to %jd\n", (intmax_t)curr_state->curr_block->offset);
+			// fprintf(out_test, "Changing state for INSERT\n");
+			// fprintf(out_test, "seeked to %jd\n", (intmax_t)curr_state->curr_block->offset);
 		    // }
 		    layers[curr_layer]->dimension_count++;
 		}
@@ -3032,25 +3034,25 @@ process_arc_entities_code(int code)
 	    coord = code / 10 - 1;
 	    center[coord] = atof(line) * units_conv[units] * scale_factor;
 	    if (verbose) {
-		fprintf(stdout, "ARC center coord #%d = %g\n", coord, center[coord]);
+		fprintf(out_test, "ARC center coord #%d = %g\n", coord, center[coord]);
 	    }
 	    break;
 	case 40:
 	    radius = atof(line) * units_conv[units] * scale_factor;
 	    if (verbose) {
-		fprintf(stdout, "ARC radius = %g\n", radius);
+		fprintf(out_test, "ARC radius = %g\n", radius);
 	    }
 	    break;
 	case 50:
 	    start_angle = atof(line);
 	    if (verbose) {
-		fprintf(stdout, "ARC start angle = %g\n", start_angle);
+		fprintf(out_test, "ARC start angle = %g\n", start_angle);
 	    }
 	    break;
 	case 51:
 	    end_angle = atof(line);
 	    if (verbose) {
-		fprintf(stdout, "ARC end angle = %g\n", end_angle);
+		fprintf(out_test, "ARC end angle = %g\n", end_angle);
 	    }
 	    break;
 	case 62:	/* color number */
@@ -3063,7 +3065,7 @@ process_arc_entities_code(int code)
 
 	    get_layer();
 	    if (verbose) {
-		fprintf(stdout, "Found an arc\n");
+		fprintf(out_test, "Found an arc\n");
 	    }
 
 	    layers[curr_layer]->arc_count++;
@@ -3081,7 +3083,7 @@ process_arc_entities_code(int code)
 		start_angle *= DEG2RAD;
 	    end_angle *= DEG2RAD;
 	    // if (verbose) {
-		// fprintf(stdout, "arc has %d segs\n", num_segs);
+		// fprintf(out_test, "arc has %d segs\n", num_segs);
 	    // }
 
 	    V_MAX(num_segs, 1);
@@ -3096,9 +3098,9 @@ process_arc_entities_code(int code)
 	    num_segs++;
 
 	    if (verbose) {
-		fprintf(stdout, "ARC points calculated:\n");
+		fprintf(out_test, "ARC points calculated:\n");
 		for (i = 0; i < num_segs; i++) {
-		    fprintf(stdout, "\t point #%d: (%g %g %g)\n", i, V3ARGS(circle_pts[i]));
+		    fprintf(out_test, "\t point #%d: (%g %g %g)\n", i, V3ARGS(circle_pts[i]));
 		}
 	    }
 
@@ -3114,9 +3116,9 @@ process_arc_entities_code(int code)
 	    }
 
 	    if (verbose) {
-		fprintf(stdout, "ARC points after move to center at (%g %g %g):\n", V3ARGS(center));
+		fprintf(out_test, "ARC points after move to center at (%g %g %g):\n", V3ARGS(center));
 		for (i = 0; i < num_segs; i++) {
-		    fprintf(stdout, "\t point #%d: (%g %g %g)\n", i, V3ARGS(circle_pts[i]));
+		    fprintf(out_test, "\t point #%d: (%g %g %g)\n", i, V3ARGS(circle_pts[i]));
 		}
 	    }
 
@@ -3136,7 +3138,7 @@ process_arc_entities_code(int code)
 		//     nmg_vertex_gv(v2, circle_pts[i]);
 		// }
 		// if (verbose) {
-		//     fprintf(stdout, "Wire edge (arc) #%d (%g %g %g) <-> (%g %g %g)\n", i,
+		//     fprintf(out_test, "Wire edge (arc) #%d (%g %g %g) <-> (%g %g %g)\n", i,
 		// 	   V3ARGS(v1->vg_p->coord),
 		// 	   V3ARGS(v2->vg_p->coord));
 		// }
@@ -3387,7 +3389,7 @@ process_3dface_entities_code(int code)
 	    coord = code / 10 - 1;
 	    pts[vert_no][coord] = atof(line) * units_conv[units] * scale_factor;
 	    if (verbose) {
-		fprintf(stdout, "3dface vertex #%d coord #%d = %g\n", vert_no, coord, pts[vert_no][coord]);
+		fprintf(out_test, "3dface vertex #%d coord #%d = %g\n", vert_no, coord, pts[vert_no][coord]);
 	    }
 	    if (vert_no == 2) {
 		pts[3][coord] = pts[2][coord];
@@ -3400,10 +3402,10 @@ process_3dface_entities_code(int code)
 	    /* end of this 3dface */
 	    get_layer();
 	    if (verbose) {
-		fprintf(stdout, "Found end of 3DFACE\n");
+		fprintf(out_test, "Found end of 3DFACE\n");
 	    }
 	    if (verbose) {
-		fprintf(stdout, "\tmaking two triangles\n");
+		fprintf(out_test, "\tmaking two triangles\n");
 	    }
 	    layers[curr_layer]->face3d_count++;
 	    for (vert_no = 0; vert_no < 4; vert_no++) {
@@ -3420,7 +3422,7 @@ process_3dface_entities_code(int code)
 	    add_triangle(face[0], face[1], face[2], curr_layer);
 	    add_triangle(face[2], face[3], face[0], curr_layer);
 	    if (verbose) {
-		fprintf(stdout, "finished face\n");
+		fprintf(out_test, "finished face\n");
 	    }
 
 	    curr_state->sub_state = UNKNOWN_ENTITY_STATE;
@@ -3526,7 +3528,7 @@ process_thumbnail_code(int code)
 // 		v = eu->eumate_p->vu_p->v_p;
 // 		lseg->end = bn_vert_tree_add(tree, V3ARGS(v->vg_p->coord), tol_sq);
 // 		if (verbose) {
-// 		    fprintf(stdout, "making sketch line seg from #%d (%g %g %g) to #%d (%g %g %g)\n",
+// 		    fprintf(out_test, "making sketch line seg from #%d (%g %g %g) to #%d (%g %g %g)\n",
 // 			   lseg->start, V3ARGS(&tree->the_array[lseg->start]),
 // 			   lseg->end, V3ARGS(&tree->the_array[lseg->end]));
 // 		}
@@ -3597,9 +3599,9 @@ readcodes()
 
     if (verbose) {
 	line_num++;
-	fprintf(stdout, "%d:\t%d\n", line_num, code);
+	fprintf(out_test, "%d:\t%d\n", line_num, code);
 	line_num++;
-	fprintf(stdout, "%d:\t%s\n", line_num, line);
+	fprintf(out_test, "%d:\t%s\n", line_num, line);
     }
 
     return code;
@@ -3628,9 +3630,9 @@ main(int argc, char *argv[])
 	//     case 's':	/* scale factor */
 	// 	scale_factor = atof(bu_optarg); //option? Maybe we can remove it? we don't need this driver
 	// 	if (scale_factor < SQRT_SMALL_FASTF) {
-	// 	    fprintf(stdout, "scale factor too small (%g < %g)\n", scale_factor, SQRT_SMALL_FASTF);
+	// 	    fprintf(out_test, "scale factor too small (%g < %g)\n", scale_factor, SQRT_SMALL_FASTF);
 	// 	    //bu_exit(1, "%s", usage);
-	// 		fprintf(stdout, "%s", usage);
+	// 		fprintf(out_test, "%s", usage);
 	// 		exit(1);
 	// 	}
 	// 	break;
@@ -3649,7 +3651,7 @@ main(int argc, char *argv[])
 	// 	break;
 	//     default:
 	// 	//bu_exit(1, "%s", usage);
-	// 	fprintf(stdout, "%s", usage);
+	// 	fprintf(out_test, "%s", usage);
 	// 	exit(1);
 	// }
     // }
@@ -3659,13 +3661,13 @@ main(int argc, char *argv[])
 
     // if (argc - bu_optind < 2) {
 	// //bu_exit(1, "%s", usage);
-	// fprintf(stdout,"%s", usage );
+	// fprintf(out_test,"%s", usage );
 	// exit(1);
     // }
 
     // dxf_file = argv[bu_optind++];
     // output_file = argv[bu_optind];
-	dxf_file = (char*)"circle.dxf";
+	dxf_file = (char*)"ellipse.dxf";
     if ((dxf=fopen(dxf_file, "rb")) == NULL) {
 	perror(dxf_file);
 	//bu_exit(1, "Cannot open DXF file (%s)\n", dxf_file);
@@ -3676,10 +3678,14 @@ main(int argc, char *argv[])
     // if ((out_fp = fopen(output_file, "w")) == NULL) {//wdb_fopen(output_file)
 	// perror(output_file);
 	// //bu_exit(1, "Cannot open BRL-CAD geometry file (%s)\n", output_file);
-	// fprintf(stdout, "Cannot open BRL-CAD geometry file (%s)\n", output_file);
+	// fprintf(out_test, "Cannot open BRL-CAD geometry file (%s)\n", output_file);
 	// exit(1);
     // }
-
+	output_file = (char*)"output";
+	if((out_test=fopen(output_file, "w")) == NULL){
+		fprintf(stdout, "Cannot open or create output file(%s) \n", output_file);
+		exit(1);
+	}
     ptr1 = strrchr(dxf_file, '/');
     if (ptr1 == NULL)
 	ptr1 = dxf_file;
@@ -3755,10 +3761,9 @@ main(int argc, char *argv[])
     max_layers = 5;
     next_layer = 1;
     curr_layer = 0;
-    // layers = (struct layer **)calloc(5, sizeof(struct layer *));	
-	layers = new struct layer *[max_layers];
+    layers = (struct layer **)calloc(5, sizeof(struct layer *));	
     for (i = 0; i < max_layers; i++) {
-		layers[i] = new layer;
+		layers[i] = (layer*)malloc(sizeof(layer[i]));
     }
 
     layers[0]->name = strdup("noname");
@@ -3786,7 +3791,7 @@ main(int argc, char *argv[])
 	    layers[i]->color_number = 7;
 
 	if (layers[i]->curr_tri || layers[i]->solids.size() || layers[i]->m) {//BU_PTBL_LEN(&layers[i]->solids) 
-	    fprintf(stdout, "LAYER: %s, color = %d (%d %d %d)\n", layers[i]->name, layers[i]->color_number, V3ARGS(&rgb[layers[i]->color_number*3]));
+	    fprintf(out_test, "LAYER: %s, color = %d (%d %d %d)\n", layers[i]->name, layers[i]->color_number, V3ARGS(&rgb[layers[i]->color_number*3]));
 	}
 
 	// if (layers[i]->curr_tri && layers[i]->vert_tree->curr_vert > 2) {
@@ -3794,7 +3799,7 @@ main(int argc, char *argv[])
 	//     if (mk_bot(out_fp, tmp_name, RT_BOT_SURFACE, RT_BOT_UNORIENTED, 0,
 	// 	       layers[i]->vert_tree, layers[i]->curr_tri, layers[i]->vert_tree->the_array,
 	// 	       layers[i]->part_tris, (double *)NULL, (struct bu_bitv *)NULL)) {
-	// 	fprintf(stdout, "Failed to make Bot\n");
+	// 	fprintf(out_test, "Failed to make Bot\n");
 	//     } else {
 	// 	(void)mk_addmember(tmp_name, &head, NULL, WMOP_UNION);
 	//     }
@@ -3823,62 +3828,62 @@ main(int argc, char *argv[])
 	}
 
 	if (layers[i]->line_count) {
-	    fprintf(stdout, "\t%zu lines\n", layers[i]->line_count);
+	    fprintf(out_test, "\t%zu lines\n", layers[i]->line_count);
 	}
 
 	if (layers[i]->solid_count) {
-	    fprintf(stdout, "\t%zu solids\n", layers[i]->solid_count);
+	    fprintf(out_test, "\t%zu solids\n", layers[i]->solid_count);
 	}
 
 	if (layers[i]->polyline_count) {
-	    fprintf(stdout, "\t%zu polylines\n", layers[i]->polyline_count);
+	    fprintf(out_test, "\t%zu polylines\n", layers[i]->polyline_count);
 	}
 
 	if (layers[i]->lwpolyline_count) {
-	    fprintf(stdout, "\t%zu lwpolylines\n", layers[i]->lwpolyline_count);
+	    fprintf(out_test, "\t%zu lwpolylines\n", layers[i]->lwpolyline_count);
 	}
 
 	if (layers[i]->ellipse_count) {
-	    fprintf(stdout, "\t%zu ellipses\n", layers[i]->ellipse_count);
+	    fprintf(out_test, "\t%zu ellipses\n", layers[i]->ellipse_count);
 	}
 
 	if (layers[i]->circle_count) {
-	    fprintf(stdout, "\t%zu circles\n", layers[i]->circle_count);
+	    fprintf(out_test, "\t%zu circles\n", layers[i]->circle_count);
 	}
 
 	if (layers[i]->arc_count) {
-	    fprintf(stdout, "\t%zu arcs\n", layers[i]->arc_count);
+	    fprintf(out_test, "\t%zu arcs\n", layers[i]->arc_count);
 	}
 
 	if (layers[i]->text_count) {
-	    fprintf(stdout, "\t%zu texts\n", layers[i]->text_count);
+	    fprintf(out_test, "\t%zu texts\n", layers[i]->text_count);
 	}
 
 	if (layers[i]->mtext_count) {
-	    fprintf(stdout, "\t%zu mtexts\n", layers[i]->mtext_count);
+	    fprintf(out_test, "\t%zu mtexts\n", layers[i]->mtext_count);
 	}
 
 	if (layers[i]->attrib_count) {
-	    fprintf(stdout, "\t%zu attribs\n", layers[i]->attrib_count);
+	    fprintf(out_test, "\t%zu attribs\n", layers[i]->attrib_count);
 	}
 
 	if (layers[i]->dimension_count) {
-	    fprintf(stdout, "\t%zu dimensions\n", layers[i]->dimension_count);
+	    fprintf(out_test, "\t%zu dimensions\n", layers[i]->dimension_count);
 	}
 
 	if (layers[i]->leader_count) {
-	    fprintf(stdout, "\t%zu leaders\n", layers[i]->leader_count);
+	    fprintf(out_test, "\t%zu leaders\n", layers[i]->leader_count);
 	}
 
 	if (layers[i]->face3d_count) {
-	    fprintf(stdout, "\t%zu 3d faces\n", layers[i]->face3d_count);
+	    fprintf(out_test, "\t%zu 3d faces\n", layers[i]->face3d_count);
 	}
 
 	if (layers[i]->point_count) {
-	    fprintf(stdout, "\t%zu points\n", layers[i]->point_count);
+	    fprintf(out_test, "\t%zu points\n", layers[i]->point_count);
 	}
 	if (layers[i]->spline_count) {
-	    fprintf(stdout, "\t%zu splines\n", layers[i]->spline_count);
+	    fprintf(out_test, "\t%zu splines\n", layers[i]->spline_count);
 	}
 
 
@@ -3890,7 +3895,7 @@ main(int argc, char *argv[])
 	//     bu_vls_printf(&comb_name, "%s.c.%d", layers[i]->name, i);
 	//     if (mk_comb(out_fp, bu_vls_addr(&comb_name), &head, 1, NULL, NULL,
 	// 		tmp_rgb, 1, 0, 1, 100, 0, 0, 0)) {
-	// 	fprintf(stdout, "Failed to make region %s\n", layers[i]->name);
+	// 	fprintf(out_test, "Failed to make region %s\n", layers[i]->name);
 	//     } else {
 	// 	(void)mk_addmember(bu_vls_addr(&comb_name), &head_all, NULL, WMOP_UNION);
 	//     }
