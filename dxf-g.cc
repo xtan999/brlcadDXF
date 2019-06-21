@@ -135,7 +135,7 @@
 #define VUNITIZE(a) { \
         register double _f = MAGSQ(a); \
         register int _vunitize; \
-        if ( ! NEAR_ZERO( _f-1.0, VUNITIZE_TOL ) ) { \
+        if ( !NEAR_ZERO( _f-1.0, VUNITIZE_TOL ) ) { \
                 _f = sqrt( _f ); \
                 if( _f < VDIVIDE_TOL ) { VSETALL( (a), 0.0 ); } else { \
                         _f = 1.0/_f; \
@@ -147,7 +147,7 @@
 #else
 #define VUNITIZE(a)     { \
         register double _f = MAGSQ(a); \
-        if ( ! NEAR_ZERO( _f-1.0, VUNITIZE_TOL ) ) { \
+        if ( !NEAR_ZERO( _f-1.0, VUNITIZE_TOL ) ) { \
                 _f = sqrt( _f ); \
                 if( _f < VDIVIDE_TOL ) { VSETALL( (a), 0.0 ); } else { \
                         _f = 1.0/_f; \
@@ -953,9 +953,9 @@ process_header_code(int code)
 	case 9:		/* variable name */
 	    if (!strncmp(line, "$INSUNITS", 9)) {
 		int_ptr = &units;
-	    } else if (0 != strcmp(line, "$CECOLOR")) {
+	    } else if (!strcmp(line, "$CECOLOR")) {
 		int_ptr = &color_by_layer;
-	    } else if (0 != strcmp(line, "$SPLINESEGS")) {
+	    } else if (!strcmp(line, "$SPLINESEGS")) {
 		int_ptr = &splineSegs;
 	    }
 	    break;
@@ -1002,7 +1002,7 @@ process_tables_unknown_code(int code)
 	    printf("%s\n", line);
 	    break;
 	case 0:		/* text string */
-	    if (0 != strncmp(line, "LAYER",5)) {
+	    if (!strncmp(line, "LAYER",5)) {
 		if (curr_layer_name) {
 		    free(curr_layer_name);
 		    curr_layer_name = NULL;
@@ -1010,7 +1010,7 @@ process_tables_unknown_code(int code)
 		curr_color = 0;
 		curr_state->sub_state = LAYER_TABLE_STATE;
 		break;
-	    } else if (0 != strncmp(line, "ENDTAB", 6)) {
+	    } else if (!strncmp(line, "ENDTAB", 6)) {
 		if (curr_layer_name) {
 		    free(curr_layer_name);
 		    curr_layer_name = NULL;
@@ -1096,13 +1096,13 @@ process_blocks_code(int code)
 	    } else if (!strncmp(line, "ENDSEC", 6)) {
 		curr_state->state = UNKNOWN_SECTION;
 		break;
-	    } else if (0 != strncmp(line, "ENDBLK", 6)) {
+	    } else if ( !strcmp(line, "ENDBLK")) {
 		curr_block = NULL;
 		break;
 	    } else if (!strncmp(line, "BLOCK", 5)) {
 		/* start of a new block */
 
-		curr_block = (block_list * ) malloc(sizeof(*curr_block));
+		curr_block = (block_list* ) malloc(sizeof(*curr_block));
 		curr_block->offset = ftell(dxf); // dxf file stream ??
 		block_head.push_front(*curr_block);
 		// BU_LIST_INSERT(&(block_head), &(curr_block->l)); //Insert "new" item in front of "old" item.  block_head is the head of the list.
@@ -1486,31 +1486,31 @@ process_entities_unknown_code(int code)
 		    fprintf(out_test, "sub_state changed to %d\n", curr_state->sub_state);
 		}
 		break;
-	    } else if (0 != strcmp(line, "CIRCLE")) {
+	    } else if (!strcmp(line, "CIRCLE")) {
 		curr_state->sub_state = CIRCLE_ENTITY_STATE;
 		if (verbose) {
 		    fprintf(out_test, "sub_state changed to %d\n", curr_state->sub_state);
 		}
 		break;
-	    } else if (0 != strcmp(line, "ELLIPSE")) {
+	    } else if (!strcmp(line, "ELLIPSE")) {
 		curr_state->sub_state = ELLIPSE_ENTITY_STATE;
 		if (verbose) {
 		    fprintf(out_test, "sub_state changed to %d\n", curr_state->sub_state);
 		}
 		break;
-	    } else if (0 != strcmp(line, "SPLINE")) {
+	    } else if (!strcmp(line, "SPLINE")) {
 		curr_state->sub_state = SPLINE_ENTITY_STATE;
 		if (verbose) {
 		    fprintf(out_test, "sub_state changed to %d\n", curr_state->sub_state);
 		}
 		break;
-	    } else if (0 != strcmp(line, "ARC")) {
+	    } else if (!strcmp(line, "ARC")) {
 		curr_state->sub_state = ARC_ENTITY_STATE;
 		if (verbose) {
 		    fprintf(out_test, "sub_state changed to %d\n", curr_state->sub_state);
 		}
 		break;
-	    } else if (0 != strcmp(line, "DIMENSION")) {
+	    } else if (!strcmp(line, "DIMENSION")) {
 		curr_state->sub_state = DIMENSION_ENTITY_STATE;
 		if (verbose) {
 		    fprintf(out_test, "sub_state changed to %d\n", curr_state->sub_state);
@@ -1522,43 +1522,43 @@ process_entities_unknown_code(int code)
 		    fprintf(out_test, "sub_state changed to %d\n", curr_state->sub_state);
 		}
 		break;
-	    } else if (0 != strcmp(line, "POINT")) {
+	    } else if (!strcmp(line, "POINT")) {
 		curr_state->sub_state = POINT_ENTITY_STATE;
 		if (verbose) {
 		    fprintf(out_test, "sub_state changed to %d\n", curr_state->sub_state);
 		}
 		break;
-	    } else if (0 != strcmp(line, "LEADER")) {
+	    } else if (!strcmp(line, "LEADER")) {
 		curr_state->sub_state = LEADER_ENTITY_STATE;
 		if (verbose) {
 		    fprintf(out_test, "sub_state changed to %d\n", curr_state->sub_state);
 		}
 		break;
-	    } else if (0 != strcmp(line, "MTEXT")) {
+	    } else if (!strcmp(line, "MTEXT")) {
 		curr_state->sub_state = MTEXT_ENTITY_STATE;
 		if (verbose) {
 		    fprintf(out_test, "sub_state changed to %d\n", curr_state->sub_state);
 		}
 		break;
-	    } else if (0 != strcmp(line, "TEXT")) {
+	    } else if (!strcmp(line, "TEXT")) {
 		curr_state->sub_state = TEXT_ENTITY_STATE;
 		if (verbose) {
 		    fprintf(out_test, "sub_state changed to %d\n", curr_state->sub_state);
 		}
 		break;
-	    } else if (0 != strcmp(line, "ATTRIB")) {
+	    } else if (!strcmp(line, "ATTRIB")) {
 		curr_state->sub_state = ATTRIB_ENTITY_STATE;
 		if (verbose) {
 		    fprintf(out_test, "sub_state changed to %d\n", curr_state->sub_state);
 		}
 		break;
-	    } else if (0 != strcmp(line, "ATTDEF")) {
+	    } else if (!strcmp(line, "ATTDEF")) {
 		curr_state->sub_state = ATTDEF_ENTITY_STATE;
 		if (verbose) {
 		    fprintf(out_test, "sub_state changed to %d\n", curr_state->sub_state);
 		}
 		break;
-	    } else if (0 != strcmp(line, "SOLID")) {
+	    } else if (!strcmp(line, "SOLID")) {
 		curr_state->sub_state = SOLID_ENTITY_STATE;
 		if (verbose) {
 		    fprintf(out_test, "sub_state changed to %d\n", curr_state->sub_state);
@@ -1573,7 +1573,7 @@ process_entities_unknown_code(int code)
 		    fprintf(out_test, "sub_state changed to %d\n", curr_state->sub_state);
 		}
 		break;
-	    } else if (0 != strncmp(line, "ENDBLK", 6)) {
+	    } else if (!strncmp(line, "ENDBLK", 6)) {
 		/* found end of an inserted block, pop the state stack */
 		tmp_state = curr_state;
 		//BU_LIST_POP(state_data, &state_stack, curr_state); // unsure ??
@@ -1637,7 +1637,7 @@ process_insert_entities_code(int code)
 	    break;
 	case 2:		/* block name */ //BU_LIST_FOR(blk, block_list, &block_head
 	    for (auto it : block_head) {
-			if (0 != strcmp(it.block_name, line)) {
+			if (!strcmp(it.block_name, line)) {
 				break;
 			}
 	    }
@@ -2966,7 +2966,7 @@ process_dimension_entities_code(int code)
 		// }
 		for (auto blk : block_head) {//BU_LIST_FOR(blk, block_list, &block_head)
 		    if (block_name) {
-				if (0 != strcmp(blk.block_name, block_name)) {
+				if (!strcmp(blk.block_name, block_name)) {
 					break;
 				}
 		    }

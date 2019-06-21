@@ -55,6 +55,7 @@ Change state to 1
 54:	0
 55:	0
 56:	ENDSEC
+end of section
 57:	0
 58:	SECTION
 59:	2
@@ -64,7 +65,6 @@ Change state to 3
 62:	TABLE
 63:	2
 64:	VPORT
-In LAYER in TABLES, layer name = VPORT
 65:	5
 66:	8
 67:	100
@@ -81,7 +81,6 @@ In LAYER in TABLES, layer name = VPORT
 78:	AcDbViewportTableRecord
 79:	2
 80:	*Active
-In LAYER in TABLES, layer name = _Active
 81:	70
 82:	0
 83:	10
@@ -182,7 +181,6 @@ In LAYER in TABLES, layer name = _Active
 178:	TABLE
 179:	2
 180:	LTYPE
-In LAYER in TABLES, layer name = LTYPE
 181:	5
 182:	5
 183:	100
@@ -199,7 +197,6 @@ In LAYER in TABLES, layer name = LTYPE
 194:	AcDbLinetypeTableRecord
 195:	2
 196:	ByBlock
-In LAYER in TABLES, layer name = ByBlock
 197:	70
 198:	0
 199:	3
@@ -220,7 +217,6 @@ In LAYER in TABLES, layer name = ByBlock
 214:	AcDbLinetypeTableRecord
 215:	2
 216:	ByLayer
-In LAYER in TABLES, layer name = ByLayer
 217:	70
 218:	0
 219:	3
@@ -241,7 +237,6 @@ In LAYER in TABLES, layer name = ByLayer
 234:	AcDbLinetypeTableRecord
 235:	2
 236:	CONTINUOUS
-In LAYER in TABLES, layer name = CONTINUOUS
 237:	70
 238:	0
 239:	3
@@ -262,7 +257,6 @@ In LAYER in TABLES, layer name = CONTINUOUS
 254:	AcDbLinetypeTableRecord
 255:	2
 256:	DOT
-In LAYER in TABLES, layer name = DOT
 257:	70
 258:	0
 259:	3
@@ -291,7 +285,6 @@ In LAYER in TABLES, layer name = DOT
 282:	AcDbLinetypeTableRecord
 283:	2
 284:	DOT2
-In LAYER in TABLES, layer name = DOT2
 285:	70
 286:	0
 287:	3
@@ -320,7 +313,6 @@ In LAYER in TABLES, layer name = DOT2
 310:	AcDbLinetypeTableRecord
 311:	2
 312:	DOTX2
-In LAYER in TABLES, layer name = DOTX2
 313:	70
 314:	0
 315:	3
@@ -349,7 +341,6 @@ In LAYER in TABLES, layer name = DOTX2
 338:	AcDbLinetypeTableRecord
 339:	2
 340:	DASHED
-In LAYER in TABLES, layer name = DASHED
 341:	70
 342:	0
 343:	3
@@ -378,7 +369,6 @@ In LAYER in TABLES, layer name = DASHED
 366:	AcDbLinetypeTableRecord
 367:	2
 368:	DASHED2
-In LAYER in TABLES, layer name = DASHED2
 369:	70
 370:	0
 371:	3
@@ -407,7 +397,6 @@ In LAYER in TABLES, layer name = DASHED2
 394:	AcDbLinetypeTableRecord
 395:	2
 396:	DASHEDX2
-In LAYER in TABLES, layer name = DASHEDX2
 397:	70
 398:	0
 399:	3
@@ -436,7 +425,6 @@ In LAYER in TABLES, layer name = DASHEDX2
 422:	AcDbLinetypeTableRecord
 423:	2
 424:	DASHDOT
-In LAYER in TABLES, layer name = DASHDOT
 425:	70
 426:	0
 427:	3
@@ -473,7 +461,6 @@ In LAYER in TABLES, layer name = DASHDOT
 458:	AcDbLinetypeTableRecord
 459:	2
 460:	DASHDOT2
-In LAYER in TABLES, layer name = DASHDOT2
 461:	70
 462:	0
 463:	3
@@ -510,7 +497,6 @@ In LAYER in TABLES, layer name = DASHDOT2
 494:	AcDbLinetypeTableRecord
 495:	2
 496:	DASHDOTX2
-In LAYER in TABLES, layer name = DASHDOTX2
 497:	70
 498:	0
 499:	3
@@ -547,7 +533,6 @@ In LAYER in TABLES, layer name = DASHDOTX2
 530:	AcDbLinetypeTableRecord
 531:	2
 532:	DIVIDE
-In LAYER in TABLES, layer name = DIVIDE
 533:	70
 534:	0
 535:	3
@@ -592,7 +577,6 @@ In LAYER in TABLES, layer name = DIVIDE
 574:	AcDbLinetypeTableRecord
 575:	2
 576:	DIVIDE2
-In LAYER in TABLES, layer name = DIVIDE2
 577:	70
 578:	0
 579:	3
@@ -637,7 +621,6 @@ In LAYER in TABLES, layer name = DIVIDE2
 618:	AcDbLinetypeTableRecord
 619:	2
 620:	DIVIDEX2
-In LAYER in TABLES, layer name = DIVIDEX2
 621:	70
 622:	0
 623:	3
@@ -682,7 +665,6 @@ In LAYER in TABLES, layer name = DIVIDEX2
 662:	AcDbLinetypeTableRecord
 663:	2
 664:	CENTER
-In LAYER in TABLES, layer name = CENTER
 665:	70
 666:	0
 667:	3
@@ -719,7 +701,6 @@ In LAYER in TABLES, layer name = CENTER
 698:	AcDbLinetypeTableRecord
 699:	2
 700:	CENTER2
-In LAYER in TABLES, layer name = CENTER2
 701:	70
 702:	0
 703:	3
@@ -756,7 +737,6 @@ In LAYER in TABLES, layer name = CENTER2
 734:	AcDbLinetypeTableRecord
 735:	2
 736:	CENTERX2
-In LAYER in TABLES, layer name = CENTERX2
 737:	70
 738:	0
 739:	3
@@ -793,7 +773,6 @@ In LAYER in TABLES, layer name = CENTERX2
 770:	AcDbLinetypeTableRecord
 771:	2
 772:	BORDER
-In LAYER in TABLES, layer name = BORDER
 773:	70
 774:	0
 775:	3
@@ -838,7 +817,6 @@ In LAYER in TABLES, layer name = BORDER
 814:	AcDbLinetypeTableRecord
 815:	2
 816:	BORDER2
-In LAYER in TABLES, layer name = BORDER2
 817:	70
 818:	0
 819:	3
@@ -883,7 +861,6 @@ In LAYER in TABLES, layer name = BORDER2
 858:	AcDbLinetypeTableRecord
 859:	2
 860:	BORDERX2
-In LAYER in TABLES, layer name = BORDERX2
 861:	70
 862:	0
 863:	3
@@ -924,7 +901,6 @@ In LAYER in TABLES, layer name = BORDERX2
 898:	TABLE
 899:	2
 900:	LAYER
-In LAYER in TABLES, layer name = LAYER
 901:	5
 902:	2
 903:	100
@@ -941,10 +917,12 @@ In LAYER in TABLES, layer name = LAYER
 914:	AcDbLayerTableRecord
 915:	2
 916:	0
+In LAYER in TABLES, layer name = 0
 917:	70
 918:	0
 919:	62
 920:	7
+In LAYER in TABLES, layer color = 7
 921:	420
 922:	0
 923:	6
@@ -955,11 +933,12 @@ In LAYER in TABLES, layer name = LAYER
 928:	F
 929:	0
 930:	ENDTAB
+New layer: ENDTAB, color number: 7	New layer name: 0
+changed to layer #1, (m = (nil), s=(nil))
 931:	0
 932:	TABLE
 933:	2
 934:	STYLE
-In LAYER in TABLES, layer name = STYLE
 935:	5
 936:	3
 937:	100
@@ -976,7 +955,6 @@ In LAYER in TABLES, layer name = STYLE
 948:	AcDbTextStyleTableRecord
 949:	2
 950:	Standard
-In LAYER in TABLES, layer name = Standard
 951:	70
 952:	0
 953:	40
@@ -999,7 +977,6 @@ In LAYER in TABLES, layer name = Standard
 970:	TABLE
 971:	2
 972:	VIEW
-In LAYER in TABLES, layer name = VIEW
 973:	5
 974:	6
 975:	100
@@ -1012,7 +989,6 @@ In LAYER in TABLES, layer name = VIEW
 982:	TABLE
 983:	2
 984:	UCS
-In LAYER in TABLES, layer name = UCS
 985:	5
 986:	7
 987:	100
@@ -1025,7 +1001,6 @@ In LAYER in TABLES, layer name = UCS
 994:	TABLE
 995:	2
 996:	APPID
-In LAYER in TABLES, layer name = APPID
 997:	5
 998:	9
 999:	100
@@ -1042,7 +1017,6 @@ In LAYER in TABLES, layer name = APPID
 1010:	AcDbRegAppTableRecord
 1011:	2
 1012:	ACAD
-In LAYER in TABLES, layer name = ACAD
 1013:	70
 1014:	0
 1015:	0
@@ -1051,7 +1025,6 @@ In LAYER in TABLES, layer name = ACAD
 1018:	TABLE
 1019:	2
 1020:	DIMSTYLE
-In LAYER in TABLES, layer name = DIMSTYLE
 1021:	5
 1022:	A
 1023:	100
@@ -1072,7 +1045,6 @@ In LAYER in TABLES, layer name = DIMSTYLE
 1038:	AcDbDimStyleTableRecord
 1039:	2
 1040:	Standard
-In LAYER in TABLES, layer name = Standard
 1041:	41
 1042:	2.5
 1043:	42
@@ -1112,769 +1084,4 @@ In LAYER in TABLES, layer name = Standard
 1077:	278
 1078:	44
 1079:	283
-1080:	0
-1081:	284
-1082:	8
-1083:	340
-1084:	11
-1085:	0
-1086:	ENDTAB
-1087:	0
-1088:	TABLE
-1089:	2
-1090:	BLOCK_RECORD
-In LAYER in TABLES, layer name = BLOCK_RECORD
-1091:	5
-1092:	1
-1093:	100
-1094:	AcDbSymbolTable
-1095:	70
-1096:	1
-1097:	0
-1098:	BLOCK_RECORD
-1099:	5
-1100:	1F
-1101:	100
-1102:	AcDbSymbolTableRecord
-1103:	100
-1104:	AcDbBlockTableRecord
-1105:	2
-1106:	*Model_Space
-In LAYER in TABLES, layer name = _Model_Space
-1107:	340
-1108:	22
-1109:	0
-1110:	BLOCK_RECORD
-1111:	5
-1112:	1B
-1113:	100
-1114:	AcDbSymbolTableRecord
-1115:	100
-1116:	AcDbBlockTableRecord
-1117:	2
-1118:	*Paper_Space
-In LAYER in TABLES, layer name = _Paper_Space
-1119:	340
-1120:	1E
-1121:	0
-1122:	BLOCK_RECORD
-1123:	5
-1124:	23
-1125:	100
-1126:	AcDbSymbolTableRecord
-1127:	100
-1128:	AcDbBlockTableRecord
-1129:	2
-1130:	*Paper_Space0
-In LAYER in TABLES, layer name = _Paper_Space0
-1131:	340
-1132:	26
-1133:	0
-1134:	ENDTAB
-1135:	0
-1136:	ENDSEC
-1137:	0
-1138:	SECTION
-1139:	2
-1140:	BLOCKS
-In LAYER in TABLES, layer name = BLOCKS
-1141:	0
-1142:	BLOCK
-1143:	5
-1144:	20
-1145:	100
-1146:	AcDbEntity
-1147:	8
-1148:	0
-1149:	100
-1150:	AcDbBlockBegin
-1151:	2
-1152:	*Model_Space
-In LAYER in TABLES, layer name = _Model_Space
-1153:	70
-1154:	0
-1155:	10
-1156:	0.0
-1157:	20
-1158:	0.0
-1159:	30
-1160:	0.0
-1161:	3
-1162:	*Model_Space
-1163:	1
-1164:	
-1165:	0
-1166:	ENDBLK
-1167:	5
-1168:	21
-1169:	100
-1170:	AcDbEntity
-1171:	8
-1172:	0
-1173:	100
-1174:	AcDbBlockEnd
-1175:	0
-1176:	BLOCK
-1177:	5
-1178:	1C
-1179:	100
-1180:	AcDbEntity
-1181:	67
-1182:	1
-1183:	8
-1184:	0
-1185:	100
-1186:	AcDbBlockBegin
-1187:	2
-1188:	*Paper_Space
-In LAYER in TABLES, layer name = _Paper_Space
-1189:	70
-1190:	0
-1191:	10
-1192:	0.0
-1193:	20
-1194:	0.0
-1195:	30
-1196:	0.0
-1197:	3
-1198:	*Paper_Space
-1199:	1
-1200:	
-1201:	0
-1202:	ENDBLK
-1203:	5
-1204:	1D
-1205:	100
-1206:	AcDbEntity
-1207:	67
-1208:	1
-1209:	8
-1210:	0
-1211:	100
-1212:	AcDbBlockEnd
-1213:	0
-1214:	BLOCK
-1215:	5
-1216:	24
-1217:	100
-1218:	AcDbEntity
-1219:	8
-1220:	0
-1221:	100
-1222:	AcDbBlockBegin
-1223:	2
-1224:	*Paper_Space0
-In LAYER in TABLES, layer name = _Paper_Space0
-1225:	70
-1226:	0
-1227:	10
-1228:	0.0
-1229:	20
-1230:	0.0
-1231:	30
-1232:	0.0
-1233:	3
-1234:	*Paper_Space0
-1235:	1
-1236:	
-1237:	0
-1238:	ENDBLK
-1239:	5
-1240:	25
-1241:	100
-1242:	AcDbEntity
-1243:	8
-1244:	0
-1245:	100
-1246:	AcDbBlockEnd
-1247:	0
-1248:	ENDSEC
-1249:	0
-1250:	SECTION
-1251:	2
-1252:	ENTITIES
-In LAYER in TABLES, layer name = ENTITIES
-1253:	0
-1254:	ELLIPSE
-1255:	5
-1256:	43
-1257:	100
-1258:	AcDbEntity
-1259:	100
-1260:	AcDbEllipse
-1261:	8
-1262:	0
-1263:	62
-1264:	256
-In LAYER in TABLES, layer color = 256
-1265:	370
-1266:	-1
-1267:	6
-1268:	ByLayer
-1269:	10
-1270:	0.0
-1271:	20
-1272:	0.0
-1273:	30
-1274:	0.0
-1275:	11
-1276:	100.0
-1277:	21
-1278:	0.0
-1279:	31
-1280:	0.0
-1281:	40
-1282:	0.5
-1283:	41
-1284:	0.0
-1285:	42
-1286:	6.2831853071795862
-1287:	0
-1288:	ENDSEC
-1289:	0
-1290:	SECTION
-1291:	2
-1292:	OBJECTS
-In LAYER in TABLES, layer name = OBJECTS
-1293:	0
-1294:	DICTIONARY
-1295:	5
-1296:	C
-1297:	100
-1298:	AcDbDictionary
-1299:	280
-1300:	0
-1301:	281
-1302:	1
-1303:	3
-1304:	ACAD_GROUP
-1305:	350
-1306:	D
-1307:	3
-1308:	ACAD_LAYOUT
-1309:	350
-1310:	1A
-1311:	3
-1312:	ACAD_MLINESTYLE
-1313:	350
-1314:	17
-1315:	3
-1316:	ACAD_PLOTSETTINGS
-1317:	350
-1318:	19
-1319:	3
-1320:	ACAD_PLOTSTYLENAME
-1321:	350
-1322:	E
-1323:	3
-1324:	AcDbVariableDictionary
-1325:	350
-1326:	44
-1327:	0
-1328:	DICTIONARY
-1329:	5
-1330:	D
-1331:	100
-1332:	AcDbDictionary
-1333:	280
-1334:	0
-1335:	281
-1336:	1
-1337:	0
-1338:	ACDBDICTIONARYWDFLT
-1339:	5
-1340:	E
-1341:	100
-1342:	AcDbDictionary
-1343:	281
-1344:	1
-1345:	3
-1346:	Normal
-1347:	350
-1348:	F
-1349:	100
-1350:	AcDbDictionaryWithDefault
-1351:	340
-1352:	F
-1353:	0
-1354:	ACDBPLACEHOLDER
-1355:	5
-1356:	F
-1357:	0
-1358:	DICTIONARY
-1359:	5
-1360:	17
-1361:	100
-1362:	AcDbDictionary
-1363:	280
-1364:	0
-1365:	281
-1366:	1
-1367:	3
-1368:	Standard
-1369:	350
-1370:	18
-1371:	0
-1372:	MLINESTYLE
-1373:	5
-1374:	18
-1375:	100
-1376:	AcDbMlineStyle
-1377:	2
-1378:	STANDARD
-In LAYER in TABLES, layer name = STANDARD
-1379:	70
-1380:	0
-1381:	3
-1382:	
-1383:	62
-1384:	256
-In LAYER in TABLES, layer color = 256
-1385:	51
-1386:	90.0
-1387:	52
-1388:	90.0
-1389:	71
-1390:	2
-1391:	49
-1392:	0.5
-1393:	62
-1394:	256
-In LAYER in TABLES, layer color = 256
-1395:	6
-1396:	BYLAYER
-1397:	49
-1398:	-0.5
-1399:	62
-1400:	256
-In LAYER in TABLES, layer color = 256
-1401:	6
-1402:	BYLAYER
-1403:	0
-1404:	DICTIONARY
-New layer: DICTIONARY, color number: 256	New layer name: STANDARD
-changed to layer #1, (m = (nil), s=(nil))
-1405:	5
-1406:	19
-1407:	100
-1408:	AcDbDictionary
-1409:	280
-1410:	0
-1411:	281
-1412:	1
-1413:	0
-1414:	DICTIONARY
-1415:	5
-1416:	1A
-1417:	100
-1418:	AcDbDictionary
-1419:	281
-1420:	1
-1421:	3
-1422:	Layout1
-1423:	350
-1424:	1E
-1425:	3
-1426:	Layout2
-1427:	350
-1428:	26
-1429:	3
-1430:	Model
-1431:	350
-1432:	22
-1433:	0
-1434:	LAYOUT
-1435:	5
-1436:	1E
-1437:	100
-1438:	AcDbPlotSettings
-1439:	1
-1440:	
-1441:	2
-1442:	C:\Program Files\AutoCAD 2002\plotters\DWF ePlot (optimized for plotting).pc3
-In LAYER in TABLES, layer name = C:\Program_Files\AutoCAD_2002\plotters\DWF_ePlot_(optimized_for_plotting).pc3
-1443:	4
-1444:	
-1445:	6
-1446:	
-1447:	40
-1448:	0.0
-1449:	41
-1450:	0.0
-1451:	42
-1452:	0.0
-1453:	43
-1454:	0.0
-1455:	44
-1456:	0.0
-1457:	45
-1458:	0.0
-1459:	46
-1460:	0.0
-1461:	47
-1462:	0.0
-1463:	48
-1464:	0.0
-1465:	49
-1466:	0.0
-1467:	140
-1468:	0.0
-1469:	141
-1470:	0.0
-1471:	142
-1472:	1.0
-1473:	143
-1474:	1.0
-1475:	70
-1476:	688
-1477:	72
-1478:	0
-1479:	73
-1480:	0
-1481:	74
-1482:	5
-1483:	7
-1484:	
-1485:	75
-1486:	16
-1487:	147
-1488:	1.0
-1489:	148
-1490:	0.0
-1491:	149
-1492:	0.0
-1493:	100
-1494:	AcDbLayout
-1495:	1
-1496:	Layout1
-1497:	70
-1498:	1
-1499:	71
-1500:	1
-1501:	10
-1502:	0.0
-1503:	20
-1504:	0.0
-1505:	11
-1506:	420.0
-1507:	21
-1508:	297.0
-1509:	12
-1510:	0.0
-1511:	22
-1512:	0.0
-1513:	32
-1514:	0.0
-1515:	14
-1516:	100000000000000000000.0
-1517:	24
-1518:	100000000000000000000.0
-1519:	34
-1520:	100000000000000000000.0
-1521:	15
-1522:	-100000000000000000000.0
-1523:	25
-1524:	-100000000000000000000.0
-1525:	35
-1526:	-100000000000000000000.0
-1527:	146
-1528:	0.0
-1529:	13
-1530:	0.0
-1531:	23
-1532:	0.0
-1533:	33
-1534:	0.0
-1535:	16
-1536:	1.0
-1537:	26
-1538:	0.0
-1539:	36
-1540:	0.0
-1541:	17
-1542:	0.0
-1543:	27
-1544:	1.0
-1545:	37
-1546:	0.0
-1547:	76
-1548:	0
-1549:	330
-1550:	1B
-1551:	0
-1552:	LAYOUT
-1553:	5
-1554:	22
-1555:	100
-1556:	AcDbPlotSettings
-1557:	1
-1558:	
-1559:	2
-1560:	C:\Program Files\AutoCAD 2002\plotters\DWF ePlot (optimized for plotting).pc3
-In LAYER in TABLES, layer name = C:\Program_Files\AutoCAD_2002\plotters\DWF_ePlot_(optimized_for_plotting).pc3
-1561:	4
-1562:	
-1563:	6
-1564:	
-1565:	40
-1566:	0.0
-1567:	41
-1568:	0.0
-1569:	42
-1570:	0.0
-1571:	43
-1572:	0.0
-1573:	44
-1574:	0.0
-1575:	45
-1576:	0.0
-1577:	46
-1578:	0.0
-1579:	47
-1580:	0.0
-1581:	48
-1582:	0.0
-1583:	49
-1584:	0.0
-1585:	140
-1586:	0.0
-1587:	141
-1588:	0.0
-1589:	142
-1590:	1.0
-1591:	143
-1592:	1.0
-1593:	70
-1594:	1712
-1595:	72
-1596:	0
-1597:	73
-1598:	0
-1599:	74
-1600:	0
-1601:	7
-1602:	
-1603:	75
-1604:	0
-1605:	147
-1606:	1.0
-1607:	148
-1608:	0.0
-1609:	149
-1610:	0.0
-1611:	100
-1612:	AcDbLayout
-1613:	1
-1614:	Model
-1615:	70
-1616:	1
-1617:	71
-1618:	0
-1619:	10
-1620:	0.0
-1621:	20
-1622:	0.0
-1623:	11
-1624:	12.0
-1625:	21
-1626:	9.0
-1627:	12
-1628:	0.0
-1629:	22
-1630:	0.0
-1631:	32
-1632:	0.0
-1633:	14
-1634:	0.0
-1635:	24
-1636:	0.0
-1637:	34
-1638:	0.0
-1639:	15
-1640:	0.0
-1641:	25
-1642:	0.0
-1643:	35
-1644:	0.0
-1645:	146
-1646:	0.0
-1647:	13
-1648:	0.0
-1649:	23
-1650:	0.0
-1651:	33
-1652:	0.0
-1653:	16
-1654:	1.0
-1655:	26
-1656:	0.0
-1657:	36
-1658:	0.0
-1659:	17
-1660:	0.0
-1661:	27
-1662:	1.0
-1663:	37
-1664:	0.0
-1665:	76
-1666:	0
-1667:	330
-1668:	1F
-1669:	0
-1670:	LAYOUT
-1671:	5
-1672:	26
-1673:	100
-1674:	AcDbPlotSettings
-1675:	1
-1676:	
-1677:	2
-1678:	C:\Program Files\AutoCAD 2002\plotters\DWF ePlot (optimized for plotting).pc3
-In LAYER in TABLES, layer name = C:\Program_Files\AutoCAD_2002\plotters\DWF_ePlot_(optimized_for_plotting).pc3
-1679:	4
-1680:	
-1681:	6
-1682:	
-1683:	40
-1684:	0.0
-1685:	41
-1686:	0.0
-1687:	42
-1688:	0.0
-1689:	43
-1690:	0.0
-1691:	44
-1692:	0.0
-1693:	45
-1694:	0.0
-1695:	46
-1696:	0.0
-1697:	47
-1698:	0.0
-1699:	48
-1700:	0.0
-1701:	49
-1702:	0.0
-1703:	140
-1704:	0.0
-1705:	141
-1706:	0.0
-1707:	142
-1708:	1.0
-1709:	143
-1710:	1.0
-1711:	70
-1712:	688
-1713:	72
-1714:	0
-1715:	73
-1716:	0
-1717:	74
-1718:	5
-1719:	7
-1720:	
-1721:	75
-1722:	16
-1723:	147
-1724:	1.0
-1725:	148
-1726:	0.0
-1727:	149
-1728:	0.0
-1729:	100
-1730:	AcDbLayout
-1731:	1
-1732:	Layout2
-1733:	70
-1734:	1
-1735:	71
-1736:	2
-1737:	10
-1738:	0.0
-1739:	20
-1740:	0.0
-1741:	11
-1742:	12.0
-1743:	21
-1744:	9.0
-1745:	12
-1746:	0.0
-1747:	22
-1748:	0.0
-1749:	32
-1750:	0.0
-1751:	14
-1752:	0.0
-1753:	24
-1754:	0.0
-1755:	34
-1756:	0.0
-1757:	15
-1758:	0.0
-1759:	25
-1760:	0.0
-1761:	35
-1762:	0.0
-1763:	146
-1764:	0.0
-1765:	13
-1766:	0.0
-1767:	23
-1768:	0.0
-1769:	33
-1770:	0.0
-1771:	16
-1772:	1.0
-1773:	26
-1774:	0.0
-1775:	36
-1776:	0.0
-1777:	17
-1778:	0.0
-1779:	27
-1780:	1.0
-1781:	37
-1782:	0.0
-1783:	76
-1784:	0
-1785:	330
-1786:	23
-1787:	0
-1788:	DICTIONARY
-1789:	5
-1790:	44
-1791:	100
-1792:	AcDbDictionary
-1793:	281
-1794:	1
-1795:	3
-1796:	DIMASSOC
-1797:	350
-1798:	46
-1799:	3
-1800:	HIDETEXT
-1801:	350
-1802:	45
-1803:	0
-1804:	DICTIONARYVAR
-1805:	5
-1806:	45
-1807:	100
-1808:	DictionaryVariables
-1809:	280
-1810:	0
-1811:	1
-1812:	2
-1813:	0
-1814:	DICTIONARYVAR
-1815:	5
-1816:	46
-1817:	100
-1818:	DictionaryVariables
-1819:	280
-1820:	0
-1821:	1
-1822:	1
-1823:	0
-1824:	ENDSEC
-LAYER: noname, color = 7 (255 255 255)
+1080:	
