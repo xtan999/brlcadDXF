@@ -383,7 +383,7 @@ struct insert_data {
 
 struct state_data {
     std::list<uint32_t> l;
-    struct block_list *curr_block;
+    struct block curr_block;
     off_t file_offset;
     int state;
     int sub_state;
@@ -426,17 +426,18 @@ struct layer {
 };
 
 
-struct block_list {
-    std::list<uint32_t> l;
+struct block {
     char *block_name;
     off_t offset;
     char handle[17];
     double base[3];
+	
+	block(): block_name(nullptr), offset(){
+	}
 };
 
-
-std::list<block_list> block_head;  // a list of block_list ??
-static struct block_list *curr_block=NULL;
+std::list<block> block_list;
+block curr_block;
 
 static struct layer **layers=NULL;
 static int max_layers;
@@ -1102,7 +1103,7 @@ process_blocks_code(int code)
 	    } else if (!strncmp(line, "BLOCK", 5)) {
 		/* start of a new block */
 
-		curr_block = (block_list* ) malloc(sizeof(*curr_block));
+		//curr_block = (block_list* ) malloc(sizeof(*curr_block));
 		curr_block->offset = ftell(dxf); // dxf file stream ??
 		block_head.push_front(*curr_block);
 		// BU_LIST_INSERT(&(block_head), &(curr_block->l)); //Insert "new" item in front of "old" item.  block_head is the head of the list.
