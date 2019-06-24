@@ -3624,7 +3624,7 @@ main(int argc, char *argv[])
     sin_delta = sin(delta_angle);
     cos_delta = cos(delta_angle);
     /* get command line arguments */
-    // scale_factor = 1.0;
+    scale_factor = 1.0;
     // while ((c = bu_getopt(argc, argv, "cdvt:s:h?")) != -1) {
 	// switch (c) {
 	//     case 's':	/* scale factor */
@@ -3667,7 +3667,7 @@ main(int argc, char *argv[])
 
     // dxf_file = argv[bu_optind++];
     // output_file = argv[bu_optind];
-	dxf_file = (char*)"lwpolyline.dxf";
+	dxf_file = (char*)"polygons.dxf";
     if ((dxf=fopen(dxf_file, "rb")) == NULL) {
 	perror(dxf_file);
 	//bu_exit(1, "Cannot open DXF file (%s)\n", dxf_file);
