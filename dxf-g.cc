@@ -383,7 +383,7 @@ struct insert_data {
 
 struct state_data {
     std::list<uint32_t> l;
-    struct block curr_block;
+    struct block *curr_block;
     off_t file_offset;
     int state;
     int sub_state;
@@ -432,12 +432,17 @@ struct block {
     char handle[17];
     double base[3];
 	
-	block(): block_name(nullptr), offset(){
+
+	block(): block_name(NULL), offset(off_t()), handle{}, base{} {}
+	block(off_t file_offset): block_name(NULL), handle{}, base{} {
+		offset = file_offset;
 	}
+
+	~block(){}
 };
 
 std::list<block> block_list;
-block curr_block;
+block *curr_block;
 
 static struct layer **layers=NULL;
 static int max_layers;
@@ -675,7 +680,7 @@ bn_mat_mul(register double o[16], register const double a[16], register const do
 }
 
 /* Added functions for list operation */
-bool block_list_is_head(block_list bl, std::list<block_list> list){
+bool block_list_is_head(block bl, std::list<block> list){
 	if(bl.block_name != list.begin()->block_name)
 		return false;
 	else if(bl.base != list.begin()->base)
@@ -684,12 +689,6 @@ bool block_list_is_head(block_list bl, std::list<block_list> list){
 		return false;
 	else if(bl.offset != list.begin()->offset)
 		return false;
-	for(auto bl_it : bl.l){
-		for(auto list_it : list.begin()->l){
-			if(bl_it  != list_it)
-				return false;
-		}
-	}
 	return true;
 }
 
@@ -1104,8 +1103,8 @@ process_blocks_code(int code)
 		/* start of a new block */
 
 		//curr_block = (block_list* ) malloc(sizeof(*curr_block));
-		curr_block->offset = ftell(dxf); // dxf file stream ??
-		block_head.push_front(*curr_block);
+		//curr_block->offset = ftell(dxf);
+		block_list.emplace_front(block(ftell(dxf)));
 		// BU_LIST_INSERT(&(block_head), &(curr_block->l)); //Insert "new" item in front of "old" item.  block_head is the head of the list.
 		break;
 	    }
@@ -1617,7 +1616,7 @@ process_insert_entities_code(int code)
 {
     static struct insert_data ins;
     static struct state_data *new_state=NULL;
-    struct block_list *blk;
+    struct block *blk;
     int coord;
 
     if (!new_state) {
@@ -1637,13 +1636,13 @@ process_insert_entities_code(int code)
 	    curr_layer_name = make_brlcad_name(line);
 	    break;
 	case 2:		/* block name */ //BU_LIST_FOR(blk, block_list, &block_head
-	    for (auto it : block_head) {
+	    for (auto it : block_list) {
 			if (!strcmp(it.block_name, line)) {
 				break;
 			}
 	    }
 		//BU_LIST_IS_HEAD(blk, &block_head)
-	    if (block_list_is_head(*blk, block_head)){
+	    if (block_list_is_head(*blk, block_list)){
 		fprintf(out_test, "ERROR: INSERT references non-existent block (%s)\n", line);
 		fprintf(out_test, "\tignoring missing block\n");
 		blk = NULL;
@@ -2940,7 +2939,7 @@ process_dimension_entities_code(int code)
 {
     static char *block_name=NULL;
     static struct state_data *new_state=NULL;
-    struct block_list *blk;
+    struct block *blk;
 
     switch (code) {
 	case 10:
@@ -2962,25 +2961,25 @@ process_dimension_entities_code(int code)
 		get_layer();
 		new_state = (state_data *)malloc(sizeof(*new_state)); // bu_alloc
 		*new_state = *curr_state;
-		// if (verbose) {
-		//     fprintf(out_test, "Created a new state for DIMENSION\n");
-		// }
-		for (auto blk : block_head) {//BU_LIST_FOR(blk, block_list, &block_head)
+		if (verbose) {
+		    fprintf(out_test, "Created a new state for DIMENSION\n");
+		}
+		for (auto blk : block_list) {//BU_LIST_FOR(blk, block_list, &block_head)
 		    if (block_name) {
 				if (!strcmp(blk.block_name, block_name)) {
 					break;
 				}
 		    }
 		}
-		if (block_list_is_head(*blk, block_head)) {
-		    // fprintf(out_test, "ERROR: DIMENSION references non-existent block (%s)\n", block_name);
-		    // fprintf(out_test, "\tignoring missing block\n");
+		if (block_list_is_head(*blk, block_list)) {
+		    fprintf(out_test, "ERROR: DIMENSION references non-existent block (%s)\n", block_name);
+		    fprintf(out_test, "\tignoring missing block\n");
 		    blk = NULL;
 		}
 		new_state->curr_block = blk;
-		// if (verbose && blk) {
-		//     fprintf(out_test, "Inserting block %s\n", blk->block_name);
-		// }
+		if (verbose && blk) {
+		    fprintf(out_test, "Inserting block %s\n", blk->block_name);
+		}
 
 		if (block_name) {
 		    free(block_name);// "block_name");
@@ -3668,7 +3667,7 @@ main(int argc, char *argv[])
 
     // dxf_file = argv[bu_optind++];
     // output_file = argv[bu_optind];
-	dxf_file = (char*)"circle.dxf";
+	dxf_file = (char*)"lwpolyline.dxf";
     if ((dxf=fopen(dxf_file, "rb")) == NULL) {
 	perror(dxf_file);
 	//bu_exit(1, "Cannot open DXF file (%s)\n", dxf_file);
@@ -3706,7 +3705,7 @@ main(int argc, char *argv[])
 
     // BU_LIST_INIT(&block_head);
     // BU_LIST_INIT(&free_hd);
-	std::list<block_list> block_head;
+	std::list<block> block_list;
 
     process_code[UNKNOWN_SECTION] = process_unknown_code;
     process_code[HEADER_SECTION] = process_header_code;
