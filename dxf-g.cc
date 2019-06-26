@@ -3768,7 +3768,7 @@ main(int argc, char *argv[])
     max_layers = 5;
     next_layer = 1;
     curr_layer = 0;
-    //layers = (struct layer **)calloc(5, sizeof(struct layer));	
+    layers = (struct layer **)calloc(5, sizeof(struct layer));	
     for (i = 0; i < max_layers; i++) {
 		layers[i] = (layer*)malloc(sizeof(layer[i]));
     }
@@ -3933,7 +3933,7 @@ main(int argc, char *argv[])
     for (i = 0; i < segs_per_circle; i++) {
 		fprintf(out_data, "Circle points (%d) : (%f, %f, %f) \n", i, circle_pts[i][0], circle_pts[i][1], circle_pts[i][2]);
     }
-	fprintf(stdout, "layer: %d" ,layers[curr_layer]->vert_tree->the_tree->vnode.coord);
+	//fprintf(stdout, "layer: %d" ,layers[curr_layer]->vert_tree->the_tree->vnode.coord);
     return 0;
 }
 
