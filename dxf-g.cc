@@ -204,6 +204,7 @@
 #define BN_CK_VERT_TREE(_p) BU_CKMAG(_p, VERT_TREE_MAGIC, "vert_tree")
 
 static FILE *out_test;
+static FILE* out_data;
 
 struct vert_root {
      uint32_t magic;
@@ -382,7 +383,7 @@ struct insert_data {
 
 
 struct state_data {
-    std::list<uint32_t> l;
+    //std::list<uint32_t> l;
     struct block *curr_block;
     off_t file_offset;
     int state;
@@ -1103,8 +1104,10 @@ process_blocks_code(int code)
 		/* start of a new block */
 
 		//curr_block = (block_list* ) malloc(sizeof(*curr_block));
-		//curr_block->offset = ftell(dxf);
-		block_list.emplace_front(block(ftell(dxf)));
+		block tmp(ftell(dxf));
+		curr_block = &tmp;
+		block_list.push_front(*curr_block);
+		//block_list.push_front(block(ftell(dxf)));
 		// BU_LIST_INSERT(&(block_head), &(curr_block->l)); //Insert "new" item in front of "old" item.  block_head is the head of the list.
 		break;
 	    }
@@ -1122,7 +1125,7 @@ process_blocks_code(int code)
 	case 5:		/* block handle */
 	    if (curr_block && strcmp("" ,curr_block->handle)) {
 		len = strlen(line);
-		V_MIN(len, 16); // ??
+		V_MIN(len, 16);
 		strlcpy(curr_block->handle, line, len);
 	    }
 	    break;
@@ -1576,15 +1579,15 @@ process_entities_unknown_code(int code)
 	    } else if (!strncmp(line, "ENDBLK", 6)) {
 		/* found end of an inserted block, pop the state stack */
 		tmp_state = curr_state;
-		//BU_LIST_POP(state_data, &state_stack, curr_state); // unsure ??
+		//BU_LIST_POP(state_data, &state_stack, curr_state);
 		state_stack.pop_back();
 		if (!curr_state) {
 		    fprintf(out_test, "ERROR: end of block encountered while not inserting!!!\n");
 		    curr_state = tmp_state;
 		    break;
 		}
-		free((char *)tmp_state);
-		fseek(dxf, curr_state->file_offset, SEEK_SET);// file system fseek ??
+		free(tmp_state);
+		fseek(dxf, curr_state->file_offset, SEEK_SET);
 		curr_state->sub_state = UNKNOWN_ENTITY_STATE;
 		if (verbose) {
 		    fprintf(out_test, "Popped state at end of inserted block (seeked to %jd)\n", (intmax_t)curr_state->file_offset);
@@ -1696,7 +1699,7 @@ process_insert_entities_code(int code)
 		bn_mat_mul(tmp1, rot, scale);
 		bn_mat_mul(tmp2, xlate, tmp1);
 		bn_mat_mul(new_state->xform, tmp2, curr_state->xform);
-		state_stack.push_back(*curr_state);
+		state_stack.emplace_back(*curr_state);
 		//BU_LIST_PUSH(&state_stack, &(curr_state->l));
 		curr_state = new_state;
 		new_state = NULL;
@@ -2208,6 +2211,10 @@ process_circle_entities_code(int code)
 
 		/* apply transformation */
 		MAT4X3PNT(tmp_pt, curr_state->xform, circle_pts[i]);
+		// for(int i = 0; i < 3; i++){
+		// 	if(curr_state)
+		// 	fprintf(out_data, "real time curren_state_data xform at (%d) is (%f)\n", i, curr_state->xform[i]);
+		// }		
 		VMOVE(circle_pts[i], tmp_pt);
 	    }
 
@@ -2987,16 +2994,16 @@ process_dimension_entities_code(int code)
 
 		if (new_state->curr_block) {
 		    //BU_LIST_PUSH(&state_stack, &(curr_state->l)); place the item at the tail of the list
-			state_stack.push_back(*curr_state);
+			state_stack.emplace_back(*curr_state);
 		    curr_state = new_state;
 		    new_state = NULL;
 		    fseek(dxf, curr_state->curr_block->offset, SEEK_SET);
 		    curr_state->state = ENTITIES_SECTION;
 		    curr_state->sub_state = UNKNOWN_ENTITY_STATE;
-		    // if (verbose) {
-			// fprintf(out_test, "Changing state for INSERT\n");
-			// fprintf(out_test, "seeked to %jd\n", (intmax_t)curr_state->curr_block->offset);
-		    // }
+		    if (verbose) {
+			fprintf(out_test, "Changing state for INSERT\n");
+			fprintf(out_test, "seeked to %jd\n", (intmax_t)curr_state->curr_block->offset);
+		    }
 		    layers[curr_layer]->dimension_count++;
 		}
 	    } else {
@@ -3079,12 +3086,12 @@ process_arc_entities_code(int code)
 	    }
 
 	    /* calculate arc at origin first */
-	    //num_segs = (end_angle - start_angle) / 360.0 * segs_per_circle;
+	    num_segs = (end_angle - start_angle) / 360.0 * segs_per_circle;
 		start_angle *= DEG2RAD;
 	    end_angle *= DEG2RAD;
-	    // if (verbose) {
-		// fprintf(out_test, "arc has %d segs\n", num_segs);
-	    // }
+	    if (verbose) {
+			fprintf(out_test, "arc has %d segs\n", num_segs);
+	    }
 
 	    V_MAX(num_segs, 1);
 
@@ -3667,7 +3674,7 @@ main(int argc, char *argv[])
 
     // dxf_file = argv[bu_optind++];
     // output_file = argv[bu_optind];
-	dxf_file = (char*)"polygons.dxf";
+	dxf_file = (char*)"circle.dxf";
     if ((dxf=fopen(dxf_file, "rb")) == NULL) {
 	perror(dxf_file);
 	//bu_exit(1, "Cannot open DXF file (%s)\n", dxf_file);
@@ -3706,6 +3713,7 @@ main(int argc, char *argv[])
     // BU_LIST_INIT(&block_head);
     // BU_LIST_INIT(&free_hd);
 	std::list<block> block_list;
+	std::list<state_data> state_stack;
 
     process_code[UNKNOWN_SECTION] = process_unknown_code;
     process_code[HEADER_SECTION] = process_header_code;
@@ -3745,7 +3753,6 @@ main(int argc, char *argv[])
     for (i = 0; i < segs_per_circle; i++) {
 	VSETALL(circle_pts[i], 0.0);
     }
-
     /* initialize state stack */
     //BU_LIST_INIT(&state_stack);
 
@@ -3761,7 +3768,7 @@ main(int argc, char *argv[])
     max_layers = 5;
     next_layer = 1;
     curr_layer = 0;
-    layers = (struct layer **)calloc(5, sizeof(struct layer *));	
+    //layers = (struct layer **)calloc(5, sizeof(struct layer));	
     for (i = 0; i < max_layers; i++) {
 		layers[i] = (layer*)malloc(sizeof(layer[i]));
     }
@@ -3916,8 +3923,17 @@ main(int argc, char *argv[])
 	// }
 
 	// (void)mk_comb(out_fp, bu_vls_addr(&top_name), &head_all, 0, NULL, NULL, NULL, 0, 0, 0, 0, 0, 0, 0);
-    // }
-
+    // }	
+	static char* out_data_file;
+	out_data_file = (char*)"output_data";
+	if((out_data=fopen(out_data_file, "w")) == NULL){
+		fprintf(stdout, "Cannot open or create output file(%s) \n", output_file);
+		exit(1);
+	}
+    for (i = 0; i < segs_per_circle; i++) {
+		fprintf(out_data, "Circle points (%d) : (%f, %f, %f) \n", i, circle_pts[i][0], circle_pts[i][1], circle_pts[i][2]);
+    }
+	fprintf(stdout, "layer: %d" ,layers[curr_layer]->vert_tree->the_tree->vnode.coord);
     return 0;
 }
 
