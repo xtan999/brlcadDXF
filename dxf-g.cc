@@ -86,12 +86,31 @@
          (a)[X] = (b)[X] + (c) * (d)[X] + (e) * (f)[X];\
          (a)[Y] = (b)[Y] + (c) * (d)[Y] + (e) * (f)[Y];\
          (a)[Z] = (b)[Z] + (c) * (d)[Z] + (e) * (f)[Z]; }
+#ifdef SHORT_VECTORS
+#define MAT4X3PNT(o,m,i) \
+        { register double _f; \
+        register int _i_m4x3p, _j_m4x3p; \
+        _f = 0.0; \
+        for(_j_m4x3p = 0; _j_m4x3p < 3; _j_m4x3p++)  \
+                _f += (m)[_j_m4x3p+12] * (i)[_j_m4x3p]; \
+        _f = 1.0/(_f + (m)[15]); \
+        for(_i_m4x3p = 0; _i_m4x3p < 3; _i_m4x3p++) \
+                (o)[_i_m4x3p] = 0.0; \
+        for(_i_m4x3p = 0; _i_m4x3p < 3; _i_m4x3p++)  { \
+                for(_j_m4x3p = 0; _j_m4x3p < 3; _j_m4x3p++) \
+                        (o)[_i_m4x3p] += (m)[_j_m4x3p+4*_i_m4x3p] * (i)[_j_m4x3p]; \
+        } \
+        for(_i_m4x3p = 0; _i_m4x3p < 3; _i_m4x3p++)  { \
+                (o)[_i_m4x3p] = ((o)[_i_m4x3p] + (m)[4*_i_m4x3p+3]) * _f; \
+        } }
+#else
 #define MAT4X3PNT(o,m,i) \
         { register double _f; \
         _f = 1.0/((m)[12]*(i)[X] + (m)[13]*(i)[Y] + (m)[14]*(i)[Z] + (m)[15]);\
         (o)[X]=((m)[0]*(i)[X] + (m)[1]*(i)[Y] + (m)[ 2]*(i)[Z] + (m)[3]) * _f;\
         (o)[Y]=((m)[4]*(i)[X] + (m)[5]*(i)[Y] + (m)[ 6]*(i)[Z] + (m)[7]) * _f;\
         (o)[Z]=((m)[8]*(i)[X] + (m)[9]*(i)[Y] + (m)[10]*(i)[Z] + (m)[11])* _f;}
+#endif /* SHORT_VECTORS */
 #define MAT_IDN(m)      {\
         (m)[1] = (m)[2] = (m)[3] = (m)[4] =\
         (m)[6] = (m)[7] = (m)[8] = (m)[9] = \
@@ -374,6 +393,149 @@ Add_vert( double x, double y, double z, struct vert_root *vert_root, double loca
 static int overstrikemode = 0;
 static int underscoremode = 0;
 
+struct polyline_struct{
+	int face[4];
+	int vertex_flage;
+	double x, y, z;
+	int color;
+	std::string layer_name;
+};
+
+struct face3d_struct{
+	double pts[2][3];
+	int color;
+	std::string layer_name;
+};
+
+struct line_struct{
+	double line_pt[2][3];
+	int color;
+	std::string layer_name;
+};
+
+struct insert_struct{
+	double scale[3];
+    double rotation;
+    double insert_pt[3];
+	double extrude_dir[4];
+	int color;
+	std::string layer_name;
+};
+
+struct point_struct{
+	double pt[3];
+	std::string layer_name;
+};
+
+struct circle_struct{
+	double center[3];
+	double radius;
+	int color;
+	std::string layer_name;
+};
+
+struct arc_struct{
+	double center[3];
+	double radius;
+	double start_angle, end_angle;
+	int color;
+	std::string layer_name;
+};
+
+struct text_struct{
+	std::string theText;
+	double firstAlignmentPoint[3];
+	double secondAlignmentPoint[3];
+	double textScale;
+	double textHeight;
+	double textRotation;
+	int color;
+	int textFlag;
+	int vertAlignment;
+	int horizAlignment;
+	std::string layer_name;
+};
+
+struct solid_struct{
+	double solid_pt[4][3];
+	int color;
+	std::string layer_name;
+};
+
+struct lwpolyline_struct{
+	double x, y;
+	int color;
+	int polyline_flag;
+	std::string layer_name;
+};
+
+struct mtext_struct{
+	std::string vls;
+	double insertionPoint[3];
+	double xAxisDirection[3];
+	double textHeight;
+	double entityHeight;
+	double charWidth;
+	double rectWidth;
+	double rotationAngle;
+	int attachPoint;
+	int drawingDirection;
+	int color;
+	std::string layer_name;
+};
+
+struct text_attrib_struct{
+	std::string theText;
+	double firstAlignmentPoint[3];
+	double secondAlignmentPoint[3];
+	double textScale;
+	double textHeight;
+	double textRotation;
+	int color;
+	int textFlag;
+	int vertAlignment;
+	int horizAlignment;
+	std::string layer_name;
+};
+
+struct ellipse_struct{
+	double center[3];
+	double majorAxis[3];
+	double ratio;
+	double start_angle, end_angle;
+	int color;
+	std::string layer_name;
+};
+
+struct leader_struct{
+	double pt[3];
+	int arrrowHeadFlag;
+	int color;
+	std::string layer_name;
+};
+
+struct spline_struct{
+	struct spline_pts{
+		double spline_pts[3];
+	};
+	int flag;
+	int degree;
+	int numKnots;
+	int numCtlPts;
+	int numFitPts;
+	std::vector<double> knots;
+	std::vector<double> weights;
+	std::vector<spline_pts> ctlPts;
+	std::vector<spline_pts> fitPts;
+	int color;
+	std::string layer_name;
+};
+
+struct dimension_struct{
+	std::string block_name;
+	std::string layer_name;
+};
+
 struct insert_data {
     double scale[3];
     double rotation;
@@ -526,7 +688,7 @@ static int polyline_vert_indices_max = 0;
 #define PVINDEX(_i, _j)	((_i)*mesh_n_count + (_j))
 #define POLYLINE_VERTEX_BLOCK	10
 
-static double pts[3][4];
+static double pts[4][3];
 
 #define UNKNOWN_ENTITY 0
 #define POLYLINE_VERTEX 1
@@ -556,7 +718,7 @@ static int segs_per_circle=32;
 static int splineSegs=16;
 static double sin_delta, cos_delta;
 static double delta_angle;
-static double circle_pts[32][3];
+static double **circle_pts;
 static double scale_factor;
 static std::list<uint32_t> free_hd;
 
@@ -1727,7 +1889,7 @@ process_solid_entities_code(int code)
     double tmp_pt[3];
     struct vertex *v0, *v1;
     static int last_vert_no = -1;
-    static double solid_pt[3][4];
+    static double solid_pt[4][3];
 
     switch (code) {
 	case 8:
@@ -1735,9 +1897,9 @@ process_solid_entities_code(int code)
 		free(curr_layer_name);
 	    }
 	    curr_layer_name = make_brlcad_name(line);
-	    // if (verbose) {
-		// fprintf(out_test, "LINE is in layer: %s\n", curr_layer_name);
-	    // }
+	    if (verbose) {
+		fprintf(out_test, "LINE is in layer: %s\n", curr_layer_name);
+	    }
 	    break;
 	case 10:
 	case 20:
@@ -1924,7 +2086,7 @@ process_line_entities_code(int code)
 {
     int vert_no;
     int coord;
-    static double line_pt[3][2];
+    static double line_pt[2][3];
     struct edgeuse *eu;
     double tmp_pt[3];
 
@@ -2211,15 +2373,15 @@ process_circle_entities_code(int code)
 
 		/* apply transformation */
 		MAT4X3PNT(tmp_pt, curr_state->xform, circle_pts[i]);
-		// for(int i = 0; i < 3; i++){
-		// 	if(curr_state)
-		// 	fprintf(out_data, "real time curren_state_data xform at (%d) is (%f)\n", i, curr_state->xform[i]);
-		// }		
+		for(int i = 0; i < 3; i++){
+			if(curr_state)
+			fprintf(out_data, "real time current_state_data xform at (%d) is (%f)\n", i, curr_state->xform[i]);
+		}		
 		VMOVE(circle_pts[i], tmp_pt);
 	    }
 
 	    /* make nmg wire edges */
-	    for (i = 0; i < segs_per_circle; i++) {
+	    // for (i = 0; i < segs_per_circle; i++) {
 		// if (i+1 == segs_per_circle) {
 		//     v2 = v0;
 		// }
@@ -2238,9 +2400,9 @@ process_circle_entities_code(int code)
 		// 	   V3ARGS(v1->vg_p->coord),
 		// 	   V3ARGS(v2->vg_p->coord));
 		// }
-		v1 = v2;
-		v2 = NULL;
-	    }
+		// v1 = v2;
+		// v2 = NULL;
+	    // }
 
 	    curr_state->sub_state = UNKNOWN_ENTITY_STATE;
 	    process_entities_code[curr_state->sub_state](code);
@@ -3674,7 +3836,7 @@ main(int argc, char *argv[])
 
     // dxf_file = argv[bu_optind++];
     // output_file = argv[bu_optind];
-	dxf_file = (char*)"circle.dxf";
+	dxf_file = (char*)"triangle-with-duplicate-vertex.dxf";
     if ((dxf=fopen(dxf_file, "rb")) == NULL) {
 	perror(dxf_file);
 	//bu_exit(1, "Cannot open DXF file (%s)\n", dxf_file);
@@ -3748,9 +3910,9 @@ main(int argc, char *argv[])
     process_tables_sub_code[LAYER_TABLE_STATE] = process_tables_layer_code;
 
     /* create storage for circles */
-    //circle_pts = (double *)calloc(segs_per_circle, sizeof(double)*3);
-	//static double circle_pts[32][3];
+    circle_pts = (double**)calloc(segs_per_circle, sizeof(double*));
     for (i = 0; i < segs_per_circle; i++) {
+	circle_pts[i] = (double*)malloc(3*sizeof(double*));
 	VSETALL(circle_pts[i], 0.0);
     }
     /* initialize state stack */
@@ -3833,7 +3995,7 @@ main(int argc, char *argv[])
 	// 	    free(skt->verts); //"free verts");
 	// 	free(skt);// "free sketch");
 	//     }
-	}
+	
 
 	if (layers[i]->line_count) {
 	    fprintf(out_test, "\t%zu lines\n", layers[i]->line_count);
@@ -3893,7 +4055,7 @@ main(int argc, char *argv[])
 	if (layers[i]->spline_count) {
 	    fprintf(out_test, "\t%zu splines\n", layers[i]->spline_count);
 	}
-
+	}
 
 	// if (!head.empty()) {//BU_LIST_NON_EMPTY(&head)
 	//     unsigned char *tmp_rgb;
@@ -3931,8 +4093,14 @@ main(int argc, char *argv[])
 		exit(1);
 	}
     for (i = 0; i < segs_per_circle; i++) {
-		fprintf(out_data, "Circle points (%d) : (%f, %f, %f) \n", i, circle_pts[i][0], circle_pts[i][1], circle_pts[i][2]);
+		fprintf(out_data, "Circle points (%d) : (%f, %f, %f) \n", i, circle_pts[i][X], circle_pts[i][Y], circle_pts[i][Z]);
     }
+	if(polyline_vert_indices){
+		for( i = 0; i < polyline_vert_indices_count; i++){
+			fprintf(out_data, "polyline_vert_indices points (%d) : (%d, %d, %d) \n", i, polyline_vert_indices[X], polyline_vert_indices[Y], polyline_vert_indices[Z]);
+		}
+	}
+	
 	//fprintf(stdout, "layer: %d" ,layers[curr_layer]->vert_tree->the_tree->vnode.coord);
     return 0;
 }
