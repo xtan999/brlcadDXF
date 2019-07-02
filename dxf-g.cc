@@ -1260,7 +1260,7 @@ process_tables_layer_code(int code)
 		get_layer();
 	    }
 
-		table_struct ts; /* storing the data to vector */
+		table_struct ts; 
 		ts.color = curr_color;
 		ts.layer_name = std::string(curr_layer_name);
 		table_vector.emplace_back(ts);
@@ -1395,7 +1395,7 @@ process_point_entities_code(int code)
 	case 0:
 	    get_layer();
 
-		point_struct pt_struct; /* storing the data to vector */
+		point_struct pt_struct; 
 		VMOVE(pt_struct.pt, pt);
 		pt_struct.layer_name = std::string(curr_layer_name);
 		point_vector.emplace_back(pt_struct);
@@ -1901,7 +1901,7 @@ process_insert_entities_code(int code)
 	    break;
 	case 0:		/* end of this insert */
 	
-	insert_struct ins_struct =  insert_struct(ins); /* storing the data to vector */
+	insert_struct ins_struct =  insert_struct(ins); 
 	ins_struct.color = curr_color;
 	ins_struct.layer_name = std::string(curr_layer_name);
 
@@ -1986,7 +1986,7 @@ process_solid_entities_code(int code)
 		fprintf(out_test, "Found end of SOLID\n");
 	    }
 		
-		solid_struct ss; /* storing the data to vector */
+		solid_struct ss; 
 		for(int i = 0; i < 4 ; i ++){
 			VMOVE(ss.solid_pt[i], solid_pt[i]);
 		}
@@ -2083,7 +2083,7 @@ process_lwpolyline_entities_code(int code)
 		fprintf(out_test, "Found end of LWPOLYLINE\n");
 	    }
 
-		lwpolyline_struct ls; /* storing the data to vector */
+		lwpolyline_struct ls; 
 		ls.x = x;
 		ls.y = y;
 		ls.polyline_flag = polyline_flag;
@@ -2193,7 +2193,7 @@ process_line_entities_code(int code)
 		fprintf(out_test, "Found end of LINE\n");
 	    }
 
-		line_struct ls; /* storing the data to vector */
+		line_struct ls; 
 		VMOVE(ls.line_pt[0], line_pt[0]);
 		VMOVE(ls.line_pt[1], line_pt[1]);
 		ls.layer_name = std::string(curr_layer_name);
@@ -2289,7 +2289,7 @@ process_ellipse_entities_code(int code)
 		fprintf(out_test, "Found an ellipse\n");
 	    }
 		
-		ellipse_struct es; /* storing the data to vector */
+		ellipse_struct es; 
 		VMOVE(es.center, center);
 		es.startAngle = startAngle;
 		es.endAngle = endAngle;
@@ -2440,7 +2440,7 @@ process_circle_entities_code(int code)
 		fprintf(out_test, "Found a circle\n");
 	    }
 
-		circle_struct cs; /* storing the data to vector */
+		circle_struct cs; 
 		VMOVE(cs.center, center);
 		cs.radius = radius;
 		cs.layer_name = std::string(curr_layer_name);
