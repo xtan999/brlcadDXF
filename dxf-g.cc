@@ -393,6 +393,17 @@ Add_vert( double x, double y, double z, struct vert_root *vert_root, double loca
 static int overstrikemode = 0;
 static int underscoremode = 0;
 
+struct header_struct{
+	int units;
+	int color_by_layer;
+	int splineSegs;
+};
+
+struct table_struct{
+	std::string layer_name;
+	int color;
+};
+
 struct polyline_struct{
 	int face[4];
 	int vertex_flage;
@@ -402,7 +413,7 @@ struct polyline_struct{
 };
 
 struct face3d_struct{
-	double pts[2][3];
+	double pts[4][3];
 	int color;
 	std::string layer_name;
 };
@@ -420,6 +431,14 @@ struct insert_struct{
 	double extrude_dir[4];
 	int color;
 	std::string layer_name;
+	insert_struct(insert_data ins){
+		VMOVE(this->scale, ins.scale);
+		VMOVE(this->insert_pt, ins.insert_pt);
+		this->rotation = ins.rotation;
+		VMOVE(this->extrude_dir, ins.extrude_dir);
+		this->extrude_dir[3] = ins.extrude_dir[3];
+		color = 0;
+	};
 };
 
 struct point_struct{
@@ -502,7 +521,7 @@ struct ellipse_struct{
 	double center[3];
 	double majorAxis[3];
 	double ratio;
-	double start_angle, end_angle;
+	double startAngle, endAngle;
 	int color;
 	std::string layer_name;
 };
@@ -516,7 +535,8 @@ struct leader_struct{
 
 struct spline_struct{
 	struct spline_pts{
-		double spline_pts[3];
+		double spoints[3];
+		double weights;
 	};
 	int flag;
 	int degree;
@@ -524,7 +544,6 @@ struct spline_struct{
 	int numCtlPts;
 	int numFitPts;
 	std::vector<double> knots;
-	std::vector<double> weights;
 	std::vector<spline_pts> ctlPts;
 	std::vector<spline_pts> fitPts;
 	int color;
@@ -535,6 +554,25 @@ struct dimension_struct{
 	std::string block_name;
 	std::string layer_name;
 };
+
+static std::vector<header_struct> header_vector;
+static std::vector<table_struct> table_vector;
+static std::vector<polyline_struct> polyline_vector;
+static std::vector<lwpolyline_struct> lwpolyline_vector;
+static std::vector<circle_struct> circle_vector;
+static std::vector<face3d_struct> face3d_vector;
+static std::vector<line_struct> line_vector;
+static std::vector<insert_struct> insert_vector;
+static std::vector<point_struct> point_vector;
+static std::vector<arc_struct> arc_vector;
+static std::vector<text_struct> text_vector;
+static std::vector<solid_struct> solid_vector;
+static std::vector<mtext_struct> mtext_vector;
+static std::vector<text_attrib_struct> text_attrib_vector;
+static std::vector<ellipse_struct> ellipse_vector;
+static std::vector<leader_struct> leader_vector;
+static std::vector<spline_struct> spline_vector;
+static std::vector<dimension_struct> dimension_vector;
 
 struct insert_data {
     double scale[3];
@@ -921,9 +959,9 @@ get_layer()
     int i;
     int old_layer=curr_layer;
 
-    // if (verbose) {
-	// fprintf(out_test, "get_layer(): state = %d, substate = %d\n", curr_state->state, curr_state->sub_state);
-    // }
+    if (verbose) {
+	fprintf(out_test, "get_layer(): state = %d, substate = %d\n", curr_state->state, curr_state->sub_state);
+    }
 
     /* do we already have a layer by this name and color */
     curr_layer = -1;
@@ -1222,6 +1260,11 @@ process_tables_layer_code(int code)
 		get_layer();
 	    }
 
+		table_struct ts; /* storing the data to vector */
+		ts.color = curr_color;
+		ts.layer_name = std::string(curr_layer_name);
+		table_vector.emplace_back(ts);
+
 	    if (curr_layer_name) {
 		free(curr_layer_name);
 		curr_layer_name = NULL;
@@ -1351,6 +1394,12 @@ process_point_entities_code(int code)
 	    break;
 	case 0:
 	    get_layer();
+
+		point_struct pt_struct; /* storing the data to vector */
+		VMOVE(pt_struct.pt, pt);
+		pt_struct.layer_name = std::string(curr_layer_name);
+		point_vector.emplace_back(pt_struct);
+
 	    layers[curr_layer]->point_count++;
 	    MAT4X3PNT(tmp_pt, curr_state->xform, pt);
 	    sprintf(tmp_name, "point.%lu", (long unsigned int)layers[curr_layer]->point_count);
@@ -1851,7 +1900,12 @@ process_insert_entities_code(int code)
 	    ins.extrude_dir[coord] = atof(line);
 	    break;
 	case 0:		/* end of this insert */
-	    if (new_state->curr_block) {
+	
+	insert_struct ins_struct =  insert_struct(ins); /* storing the data to vector */
+	ins_struct.color = curr_color;
+	ins_struct.layer_name = std::string(curr_layer_name);
+
+	if (new_state->curr_block) {
 		double xlate[16], scale[16], rot[16], tmp1[16], tmp2[16];
 		MAT_IDN(xlate);
 		MAT_IDN(scale);
@@ -1931,7 +1985,15 @@ process_solid_entities_code(int code)
 	    if (verbose) {
 		fprintf(out_test, "Found end of SOLID\n");
 	    }
+		
+		solid_struct ss; /* storing the data to vector */
+		for(int i = 0; i < 4 ; i ++){
+			VMOVE(ss.solid_pt[i], solid_pt[i]);
+		}
+		ss.color = curr_color;
+		ss.layer_name = std::string(curr_layer_name);
 
+		solid_vector.emplace_back(ss);
 	    layers[curr_layer]->solid_count++;
 
 	    // if (!layers[curr_layer]->m) {
@@ -2020,6 +2082,14 @@ process_lwpolyline_entities_code(int code)
 	    if (verbose) {
 		fprintf(out_test, "Found end of LWPOLYLINE\n");
 	    }
+
+		lwpolyline_struct ls; /* storing the data to vector */
+		ls.x = x;
+		ls.y = y;
+		ls.polyline_flag = polyline_flag;
+		ls.color = curr_color;
+		ls.layer_name = std::string(curr_layer_name);
+		lwpolyline_vector.emplace_back(ls);
 
 	    layers[curr_layer]->lwpolyline_count++;
 
@@ -2123,6 +2193,13 @@ process_line_entities_code(int code)
 		fprintf(out_test, "Found end of LINE\n");
 	    }
 
+		line_struct ls; /* storing the data to vector */
+		VMOVE(ls.line_pt[0], line_pt[0]);
+		VMOVE(ls.line_pt[1], line_pt[1]);
+		ls.layer_name = std::string(curr_layer_name);
+		ls.color = curr_color;
+		line_vector.emplace_back(ls);
+
 	    layers[curr_layer]->line_count++;
 
 	    // if (!layers[curr_layer]->m) {
@@ -2211,6 +2288,16 @@ process_ellipse_entities_code(int code)
 	    if (verbose) {
 		fprintf(out_test, "Found an ellipse\n");
 	    }
+		
+		ellipse_struct es; /* storing the data to vector */
+		VMOVE(es.center, center);
+		es.startAngle = startAngle;
+		es.endAngle = endAngle;
+		es.layer_name = std::string(curr_layer_name);
+		VMOVE(es.majorAxis, majorAxis);
+		es.ratio = ratio;
+		es.color = curr_color;
+		ellipse_vector.emplace_back(es);
 
 	    // if (!layers[curr_layer]->m) {
 		// create_nmg();
@@ -2352,6 +2439,13 @@ process_circle_entities_code(int code)
 	    if (verbose) {
 		fprintf(out_test, "Found a circle\n");
 	    }
+
+		circle_struct cs; /* storing the data to vector */
+		VMOVE(cs.center, center);
+		cs.radius = radius;
+		cs.layer_name = std::string(curr_layer_name);
+		cs.color = curr_color;
+		circle_vector.emplace_back(cs);
 
 	    // if (!layers[curr_layer]->m) {
 		// create_nmg();
@@ -2831,6 +2925,13 @@ process_leader_entities_code(int code)
 		fprintf(out_test, "Found end of LEADER: arrowhead flag = %d\n", arrowHeadFlag);
 	    }
 
+		leader_struct ls;
+		VMOVE(ls.pt, pt);
+		ls.arrrowHeadFlag = arrowHeadFlag;
+		ls.color = curr_color;
+		ls.layer_name = std::string(curr_layer_name);
+		leader_vector.emplace_back(ls);
+
 	    layers[curr_layer]->leader_count++;
 
 	    // if (polyline_vertex_count > 1) {
@@ -2958,6 +3059,20 @@ process_mtext_entities_code(int code)
 	    // if (!layers[curr_layer]->m) {
 		// create_nmg();
 	    // }
+		mtext_struct ms;
+		ms.attachPoint = attachPoint;
+		ms.charWidth = charWidth;
+		ms.drawingDirection = drawingDirection;
+		ms.entityHeight = entityHeight;
+		ms.rectWidth = rectWidth;
+		ms.rotationAngle = rotationAngle;
+		ms.textHeight = textHeight;
+		ms.vls = vls;
+		VMOVE(ms.xAxisDirection, xAxisDirection);
+		VMOVE(ms.insertionPoint, insertionPoint);
+		ms.layer_name = std::string(curr_layer_name);
+		ms.color = curr_color;
+		mtext_vector.emplace_back(ms);
 
 	    layers[curr_layer]->mtext_count++;
 
@@ -3073,6 +3188,19 @@ process_text_attrib_entities_code(int code)
 		/* draw the text */
 		get_layer();
 
+		text_attrib_struct tas;
+		tas.color = curr_color;
+		VMOVE(tas.firstAlignmentPoint, firstAlignmentPoint);
+		tas.horizAlignment = horizAlignment;
+		VMOVE(tas.secondAlignmentPoint, secondAlignmentPoint);
+		tas.textFlag = textFlag;
+		tas.textHeight = textHeight;
+		tas.textRotation = textRotation;
+		tas.textScale = textScale;
+		tas.theText = std::string(theText);
+		tas.vertAlignment = vertAlignment;
+		text_attrib_vector.emplace_back(tas);
+
 		// if (!layers[curr_layer]->m) {
 		//     create_nmg();
 		// }
@@ -3128,6 +3256,12 @@ process_dimension_entities_code(int code)
 	    if (block_name != NULL) {
 		/* insert this dimension block */
 		get_layer();
+
+		dimension_struct ds;
+		ds.block_name = std::string(block_name);
+		ds.layer_name = std::string(curr_layer_name);
+		dimension_vector.emplace_back(ds);
+
 		new_state = (state_data *)malloc(sizeof(*new_state)); // bu_alloc
 		*new_state = *curr_state;
 		if (verbose) {
@@ -3236,6 +3370,15 @@ process_arc_entities_code(int code)
 	    if (verbose) {
 		fprintf(out_test, "Found an arc\n");
 	    }
+
+		arc_struct as;
+		VMOVE(as.center, center);
+		as.radius = radius;
+		as.start_angle = start_angle;
+		as.end_angle = end_angle;
+		as.color = curr_color;
+		as.layer_name = std::string(curr_layer_name);
+		arc_vector.emplace_back(as);
 
 	    layers[curr_layer]->arc_count++;
 
@@ -3455,6 +3598,31 @@ process_spline_entities_code(int code)
 	case 0:
 	    /* draw the spline */
 	    get_layer();
+
+		spline_struct ss;
+		ss.flag = flag;
+		ss.degree = degree;
+		ss.numKnots = numKnots;
+		ss.numCtlPts = numCtlPts;
+		ss.numFitPts = numFitPts;
+		ss.color = curr_color;
+		ss.layer_name = std::string(curr_layer_name);
+		for(int i = 0; i < numKnots; i++){
+			ss.knots.emplace_back(knots[i]);
+		}
+		for(int i = 0; i < numCtlPts; i++){
+			spline_struct::spline_pts sPts;
+			sPts.weights = weights[i];
+			VSET(sPts.spoints, ctlPts[i*3+0], ctlPts[i*3+1], ctlPts[i*3+2]);
+			ss.ctlPts.emplace_back(sPts);
+		}
+		for(int i = 0; i < numFitPts; i++){
+			spline_struct::spline_pts sPts;
+			VSET(sPts.spoints, fitPts[i*3+0], fitPts[i*3+1], fitPts[i*3+2]);
+			ss.ctlPts.emplace_back(sPts);
+		}
+		spline_vector.emplace_back(ss);
+
 	    layers[curr_layer]->spline_count++;
 
 	    if (flag & SPLINE_RATIONAL) {
@@ -3576,6 +3744,15 @@ process_3dface_entities_code(int code)
 	    if (verbose) {
 		fprintf(out_test, "\tmaking two triangles\n");
 	    }
+
+		face3d_struct f3d;
+		for(int i = 0; i < 4; i++){
+			VMOVE(f3d.pts[i], pts[i]);
+		}
+		f3d.color = curr_color;
+		f3d.layer_name = std::string(curr_layer_name);
+		face3d_vector.emplace_back(f3d);
+		
 	    layers[curr_layer]->face3d_count++;
 	    for (vert_no = 0; vert_no < 4; vert_no++) {
 		double tmp_pt1[3];
