@@ -424,6 +424,14 @@ struct line_struct{
 	std::string layer_name;
 };
 
+struct insert_data {
+    double scale[3];
+    double rotation;
+    double insert_pt[3];
+	double extrude_dir[4];
+};
+
+
 struct insert_struct{
 	double scale[3];
     double rotation;
@@ -573,14 +581,6 @@ static std::vector<ellipse_struct> ellipse_vector;
 static std::vector<leader_struct> leader_vector;
 static std::vector<spline_struct> spline_vector;
 static std::vector<dimension_struct> dimension_vector;
-
-struct insert_data {
-    double scale[3];
-    double rotation;
-    double insert_pt[3];
-	double extrude_dir[4];
-};
-
 
 struct state_data {
     //std::list<uint32_t> l;
