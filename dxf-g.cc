@@ -393,185 +393,6 @@ Add_vert( double x, double y, double z, struct vert_root *vert_root, double loca
 static int overstrikemode = 0;
 static int underscoremode = 0;
 
-struct header_struct{
-	int units;
-	int color_by_layer;
-	int splineSegs;
-};
-
-struct table_struct{
-	std::string layer_name;
-	int color;
-};
-
-struct polyline_vertex_struct{
-	int face[4];
-	int vertex_flage;
-	double x, y, z;
-	int color;
-	std::string layer_name;
-};
-
-struct polyline_struct{
-	int polyline_flag;
-	int mesh_m_count;
-	int mesh_n_count;
-	int color;
-	int invisible;
-	std::string layer_name;
-};
-
-struct face3d_struct{
-	double pts[4][3];
-	int color;
-	std::string layer_name;
-};
-
-struct line_struct{
-	double line_pt[2][3];
-	int color;
-	std::string layer_name;
-};
-
-struct insert_data {
-    double scale[3];
-    double rotation;
-    double insert_pt[3];
-	double extrude_dir[4];
-};
-
-
-struct insert_struct{
-	double scale[3];
-    double rotation;
-    double insert_pt[3];
-	double extrude_dir[4];
-	int color;
-	std::string layer_name;
-	insert_struct(insert_data ins){
-		VMOVE(this->scale, ins.scale);
-		VMOVE(this->insert_pt, ins.insert_pt);
-		this->rotation = ins.rotation;
-		VMOVE(this->extrude_dir, ins.extrude_dir);
-		this->extrude_dir[3] = ins.extrude_dir[3];
-		color = 0;
-	};
-};
-
-struct point_struct{
-	double pt[3];
-	std::string layer_name;
-};
-
-struct circle_struct{
-	double center[3];
-	double radius;
-	int color;
-	std::string layer_name;
-};
-
-struct arc_struct{
-	double center[3];
-	double radius;
-	double start_angle, end_angle;
-	int color;
-	std::string layer_name;
-};
-
-struct text_struct{
-	std::string theText;
-	double firstAlignmentPoint[3];
-	double secondAlignmentPoint[3];
-	double textScale;
-	double textHeight;
-	double textRotation;
-	int color;
-	int textFlag;
-	int vertAlignment;
-	int horizAlignment;
-	std::string layer_name;
-};
-
-struct solid_struct{
-	double solid_pt[4][3];
-	int color;
-	std::string layer_name;
-};
-
-struct lwpolyline_struct{
-	double x, y;
-	int color;
-	int polyline_flag;
-	std::string layer_name;
-};
-
-struct mtext_struct{
-	std::string vls;
-	double insertionPoint[3];
-	double xAxisDirection[3];
-	double textHeight;
-	double entityHeight;
-	double charWidth;
-	double rectWidth;
-	double rotationAngle;
-	int attachPoint;
-	int drawingDirection;
-	int color;
-	std::string layer_name;
-};
-
-struct text_attrib_struct{
-	std::string theText;
-	double firstAlignmentPoint[3];
-	double secondAlignmentPoint[3];
-	double textScale;
-	double textHeight;
-	double textRotation;
-	int color;
-	int textFlag;
-	int vertAlignment;
-	int horizAlignment;
-	std::string layer_name;
-};
-
-struct ellipse_struct{
-	double center[3];
-	double majorAxis[3];
-	double ratio;
-	double startAngle, endAngle;
-	int color;
-	std::string layer_name;
-};
-
-struct leader_struct{
-	double pt[3];
-	int arrrowHeadFlag;
-	int color;
-	std::string layer_name;
-};
-
-struct spline_struct{
-	struct spline_pts{
-		double spoints[3];
-		double weights;
-	};
-	int flag;
-	int degree;
-	int numKnots;
-	int numCtlPts;
-	int numFitPts;
-	std::vector<double> knots;
-	std::vector<spline_pts> ctlPts;
-	std::vector<spline_pts> fitPts;
-	int color;
-	std::string layer_name;
-};
-
-struct dimension_struct{
-	std::string block_name;
-	std::string layer_name;
-};
-
 static std::vector<header_struct> header_vector;
 static std::vector<table_struct> table_vector;
 static std::vector<polyline_vertex_struct> polyline_vertex_vector;
@@ -1936,9 +1757,15 @@ process_insert_entities_code(int code)
 	    break;
 	case 0:		/* end of this insert */
 	
-	insert_struct ins_struct =  insert_struct(ins); 
+	insert_struct ins_struct;
+	VMOVE(ins_struct.scale, ins.scale);
+	VMOVE(ins_struct.insert_pt, ins.insert_pt);
+	ins_struct.rotation = ins.rotation;
+	VMOVE(ins_struct.extrude_dir, ins.extrude_dir);
+	ins_struct.extrude_dir[3] = ins.extrude_dir[3];
 	ins_struct.color = curr_color;
 	ins_struct.layer_name = std::string(curr_layer_name);
+	insert_vector.emplace_back(ins_struct);
 
 	if (new_state->curr_block) {
 		double xlate[16], scale[16], rot[16], tmp1[16], tmp2[16];
