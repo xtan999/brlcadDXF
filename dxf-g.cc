@@ -404,11 +404,20 @@ struct table_struct{
 	int color;
 };
 
-struct polyline_struct{
+struct polyline_vertex_struct{
 	int face[4];
 	int vertex_flage;
 	double x, y, z;
 	int color;
+	std::string layer_name;
+};
+
+struct polyline_struct{
+	int polyline_flag;
+	int mesh_m_count;
+	int mesh_n_count;
+	int color;
+	int invisible;
 	std::string layer_name;
 };
 
@@ -565,6 +574,7 @@ struct dimension_struct{
 
 static std::vector<header_struct> header_vector;
 static std::vector<table_struct> table_vector;
+static std::vector<polyline_vertex_struct> polyline_vertex_vector;
 static std::vector<polyline_struct> polyline_vector;
 static std::vector<lwpolyline_struct> lwpolyline_vector;
 static std::vector<circle_struct> circle_vector;
@@ -1447,7 +1457,19 @@ process_entities_polyline_vertex_code(int code)
 	    face[coord] = abs(atoi(line));
 	    break;
 	case 0:
-	    get_layer();
+	{
+		get_layer();
+
+		polyline_vertex_struct pvs;
+		pvs.x = x;
+		pvs.y = y;
+		pvs.z = z;
+		VMOVE(pvs.face, face);
+		pvs.face[3] = face[3];
+		pvs.color = curr_color;
+		pvs.layer_name = std::string(curr_layer_name);
+		polyline_vertex_vector.emplace_back(pvs);
+
 	    if (vertex_flag == POLY_VERTEX_FACE) {
 		add_triangle(polyline_vert_indices[face[0]-1],
 			     polyline_vert_indices[face[1]-1],
@@ -1483,6 +1505,7 @@ process_entities_polyline_vertex_code(int code)
 		fprintf(out_test, "sub_state changed to %d\n", curr_state->sub_state);
 	    }
 	    return process_entities_code[curr_state->sub_state](code);
+		}
 	case 999:	/* comment */
 	    printf("%s\n", line);
 	    break;
@@ -1513,7 +1536,18 @@ process_entities_polyline_code(int code)
 	    printf("%s\n", line);
 	    break;
 	case 0:		/* text string */
+	{
 	    get_layer();
+
+		polyline_struct ps;
+		ps.mesh_m_count = mesh_m_count;
+		ps.mesh_n_count = mesh_n_count;
+		ps.polyline_flag = polyline_flag;
+		ps.invisible = invisible;
+		ps.color = curr_color;
+		ps.layer_name = std::string(curr_layer_name);
+		polyline_vector.emplace_back(ps);
+
 	    if (!strncmp(line, "SEQEND", 6)) {
 		/* build any polyline meshes here */
 		if (polyline_flag & POLY_3D_MESH) {
@@ -1622,7 +1656,7 @@ process_entities_polyline_code(int code)
 		}
 		break;
 	    } else if (!strncmp(line, "VERTEX", 6)) {
-			if (verbose)
+		if (verbose)
 				fprintf(out_test, "Found a POLYLINE VERTEX\n");
 		curr_state->sub_state = POLYLINE_VERTEX_ENTITY_STATE;
 		process_entities_code[POLYLINE_VERTEX_ENTITY_STATE](-1);
@@ -1633,6 +1667,7 @@ process_entities_polyline_code(int code)
 		}
 		break;
 	    }
+	}
 	case 70:	/* polyline flag */
 	    polyline_flag = atoi(line);
 	    break;
@@ -3953,6 +3988,10 @@ readcodes()
     return code;
 }
 
+std::vector<circle_struct> return_circle_entities_vector(){
+	return circle_vector; 
+}
+
 
 int
 main(int argc, char *argv[])
@@ -4013,7 +4052,7 @@ main(int argc, char *argv[])
 
     // dxf_file = argv[bu_optind++];
     // output_file = argv[bu_optind];
-	dxf_file = (char*)"triangle-with-duplicate-vertex.dxf";
+	dxf_file = (char*)"polyline.dxf";
     if ((dxf=fopen(dxf_file, "rb")) == NULL) {
 	perror(dxf_file);
 	//bu_exit(1, "Cannot open DXF file (%s)\n", dxf_file);
