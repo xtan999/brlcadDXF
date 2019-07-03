@@ -2331,7 +2331,7 @@ process_circle_entities_code(int code)
 		MAT4X3PNT(tmp_pt, curr_state->xform, circle_pts[i]);
 		for(int i = 0; i < 3; i++){
 			if(curr_state)
-			fprintf(out_data, "real time current_state_data xform at (%d) is (%f)\n", i, curr_state->xform[i]);
+			fprintf(out_test, "real time current_state_data xform at (%d) is (%f)\n", i, curr_state->xform[i]);
 		}		
 		VMOVE(circle_pts[i], tmp_pt);
 	    }
@@ -3879,7 +3879,7 @@ main(int argc, char *argv[])
 
     // dxf_file = argv[bu_optind++];
     // output_file = argv[bu_optind];
-	dxf_file = (char*)"polyline.dxf";
+	dxf_file = (char*)"circle.dxf";
     if ((dxf=fopen(dxf_file, "rb")) == NULL) {
 	perror(dxf_file);
 	//bu_exit(1, "Cannot open DXF file (%s)\n", dxf_file);
