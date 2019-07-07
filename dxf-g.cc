@@ -1926,12 +1926,21 @@ process_lwpolyline_entities_code(int code)
 	    }
 	    break;
 	case 20:
+	{
 	    y = atof(line) * units_conv[units] * scale_factor;
 	    if (verbose) {
 		fprintf(out_test, "LWPolyLine vertex #%d (y) = %g\n", vert_no, y);
-	    }
+	    }		
+		lwpolyline_struct ls; 
+		ls.x = x;
+		ls.y = y;
+		ls.polyline_flag = polyline_flag;
+		ls.color = curr_color;
+		ls.layer_name = std::string(curr_layer_name);
+		lwpolyline_vector.emplace_back(ls);
 	    add_polyline_vertex(x, y, 0.0);
 	    break;
+	}
 	case 62:	/* color number */
 	    curr_color = atoi(line);
 	    break;
@@ -1944,15 +1953,7 @@ process_lwpolyline_entities_code(int code)
 	    if (verbose) {
 		fprintf(out_test, "Found end of LWPOLYLINE\n");
 	    }
-
-		lwpolyline_struct ls; 
-		ls.x = x;
-		ls.y = y;
-		ls.polyline_flag = polyline_flag;
-		ls.color = curr_color;
-		ls.layer_name = std::string(curr_layer_name);
-		lwpolyline_vector.emplace_back(ls);
-
+		
 	    layers[curr_layer]->lwpolyline_count++;
 
 	    // if (!layers[curr_layer]->m) {
@@ -2328,11 +2329,7 @@ process_circle_entities_code(int code)
 		VADD2(circle_pts[i], circle_pts[i], center);
 
 		/* apply transformation */
-		MAT4X3PNT(tmp_pt, curr_state->xform, circle_pts[i]);
-		for(int i = 0; i < 3; i++){
-			if(curr_state)
-			fprintf(out_test, "real time current_state_data xform at (%d) is (%f)\n", i, curr_state->xform[i]);
-		}		
+		MAT4X3PNT(tmp_pt, curr_state->xform, circle_pts[i]);	
 		VMOVE(circle_pts[i], tmp_pt);
 	    }
 
@@ -3879,7 +3876,7 @@ main(int argc, char *argv[])
 
     // dxf_file = argv[bu_optind++];
     // output_file = argv[bu_optind];
-	dxf_file = (char*)"circle.dxf";
+	dxf_file = (char*)"./circle-double.dxf";
     if ((dxf=fopen(dxf_file, "rb")) == NULL) {
 	perror(dxf_file);
 	//bu_exit(1, "Cannot open DXF file (%s)\n", dxf_file);
@@ -4053,7 +4050,7 @@ main(int argc, char *argv[])
 	}
 
 	if (layers[i]->lwpolyline_count) {
-	    fprintf(out_test, "\t%zu lwpolylines\n", layers[i]->lwpolyline_count);
+	    fprintf(stdout, "\t%zu lwpolylines\n", layers[i]->lwpolyline_count);
 	}
 
 	if (layers[i]->ellipse_count) {
