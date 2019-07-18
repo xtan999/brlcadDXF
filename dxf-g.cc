@@ -1839,13 +1839,14 @@ process_insert_entities_code(int code)
 			fseek(dxf, block_list.at(curr_state->curr_block_indx).offset, SEEK_SET);
 			curr_state->state = ENTITIES_SECTION;
 			curr_state->sub_state = UNKNOWN_ENTITY_STATE;
-			delete new_state;
-			new_state = NULL;
 			if (verbose) {
 				fprintf(stdout, "Changing state for INSERT\n");
 				fprintf(stdout, "seeked to %jd\n", (intmax_t)block_list.at(curr_state->curr_block_indx).offset);
+				fprintf(stdout, "curr block indx %d \n", curr_state->curr_block_indx);
 				//bn_mat_print("state xform", curr_state->xform);
 			}
+			delete new_state;
+			new_state = NULL;
 		}
 	    // break;
     }
