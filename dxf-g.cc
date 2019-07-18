@@ -222,6 +222,32 @@
 #define VERT_BLOCK 512                  /**< @brief number of vertices to malloc per call when building the array */ 
 #define BN_CK_VERT_TREE(_p) BU_CKMAG(_p, VERT_TREE_MAGIC, "vert_tree")
 
+/* replicated version of strlcpy from FreeBSD */
+size_t
+strlcpy(char * __restrict dst, const char * __restrict src, size_t dsize)
+{
+	const char *osrc = src;
+	size_t nleft = dsize;
+
+	/* Copy as many bytes as will fit. */
+	if (nleft != 0) {
+		while (--nleft != 0) {
+			if ((*dst++ = *src++) == '\0')
+				break;
+		}
+	}
+
+	/* Not enough room in dst, add NUL and traverse rest of src. */
+	if (nleft == 0) {
+		if (dsize != 0)
+			*dst = '\0';		/* NUL-terminate dst */
+		while (*src++)
+			;
+	}
+
+	return(src - osrc - 1);	/* count does not include NUL */
+}
+
 static FILE *out_test;
 static FILE* out_data;
 
@@ -413,9 +439,48 @@ static std::vector<leader_struct> leader_vector;
 static std::vector<spline_struct> spline_vector;
 static std::vector<dimension_struct> dimension_vector;
 
+struct block {
+    std::string block_name;
+    off_t offset;
+    char handle[17];
+    double base[3];
+	
+	block(const block& blk){
+		strlcpy(handle, blk.handle, sizeof(handle));
+		block_name = blk.block_name;
+		VMOVE(base, blk.base);
+		offset = blk.offset;
+	}
+	block(): block_name(std::string()), offset(off_t()), handle{}, base{} {}
+	block(off_t file_offset): block_name(""), handle{}, base{} {
+		offset = file_offset;
+}
+
+	int empty(){
+		if(this->block_name != ""){
+			if(this->offset != off_t()){
+				for(int i = 0; i < 3; i ++){
+					if(base[i] == NULL){
+						return 0;
+					}
+				}
+				for(int i = 0; i < 17; i++){
+					if(handle[i] == NULL){
+						return 0;
+					}
+				}
+				return 1;
+			}
+			return 0;
+		}
+		return 0;
+	}
+};
+
 struct state_data {
     //std::list<uint32_t> l;
-    struct block *curr_block;
+    //struct block *curr_block;
+	int curr_block_indx;
     off_t file_offset;
     int state;
     int sub_state;
@@ -423,7 +488,7 @@ struct state_data {
 };
 
 
-static std::list<state_data> state_stack;
+static std::vector<state_data> state_stack;
 static struct state_data *curr_state;
 static int curr_color=7;
 static int ignore_colors = 0;
@@ -457,24 +522,9 @@ struct layer {
     struct shell *s;
 };
 
-
-struct block {
-    char *block_name;
-    off_t offset;
-    char handle[17];
-    double base[3];
-	
-
-	block(): block_name(NULL), offset(off_t()), handle{}, base{} {}
-	block(off_t file_offset): block_name(NULL), handle{}, base{} {
-		offset = file_offset;
-	}
-
-	~block(){}
-};
-
-std::list<block> block_list;
-block *curr_block;
+static std::vector<block> block_list;
+static block *curr_block;
+static int indx;
 
 static struct layer **layers=NULL;
 static int max_layers;
@@ -687,6 +737,7 @@ bn_mat_angles(
     mat[12] = mat[13] = mat[14] = 0.0;
     mat[15] = 1.0;
 }
+
 void
 bn_mat_mul(register double o[16], register const double a[16], register const double b[16])
 {
@@ -712,16 +763,24 @@ bn_mat_mul(register double o[16], register const double a[16], register const do
 }
 
 /* Added functions for list operation */
-bool block_list_is_head(block bl, std::list<block> list){
-	if(bl.block_name != list.begin()->block_name)
-		return false;
-	else if(bl.base != list.begin()->base)
-		return false;
-	else if(bl.handle != list.begin()->handle)
-		return false;
-	else if(bl.offset != list.begin()->offset)
-		return false;
+bool block_list_is_head(block bl, std::vector<block> list){
+	if(!list.empty()){
+		if(bl.block_name != list.front().block_name)
+			return false;
+		else if(!strcmp(bl.handle, list.front().handle))
+			return false;
+		else if(bl.offset != list.front().offset)
+			return false;
+		else{
+			for(int i = 0; i < 3; i++){
+				if(bl.base[i] != list.front().base[i])
+					return false;
+			}
+			return true;
+		}
+	}
 	return true;
+
 }
 
 /* function for undefined NEAR_EQUAL */
@@ -736,32 +795,6 @@ bool NEAR_EQUAL(double a, double b, double local_tol_sql){
 std::string Char2String(const char* line){
 	std::string str(line);
 	return str;
-}
-
-/* replicated version of strlcpy from FreeBSD */
-size_t
-strlcpy(char * __restrict dst, const char * __restrict src, size_t dsize)
-{
-	const char *osrc = src;
-	size_t nleft = dsize;
-
-	/* Copy as many bytes as will fit. */
-	if (nleft != 0) {
-		while (--nleft != 0) {
-			if ((*dst++ = *src++) == '\0')
-				break;
-		}
-	}
-
-	/* Not enough room in dst, add NUL and traverse rest of src. */
-	if (nleft == 0) {
-		if (dsize != 0)
-			*dst = '\0';		/* NUL-terminate dst */
-		while (*src++)
-			;
-	}
-
-	return(src - osrc - 1);	/* count does not include NUL */
 }
 
 static char *
@@ -1133,44 +1166,46 @@ process_blocks_code(int code)
 	    } else if (!strncmp(line, "ENDSEC", 6)) {
 		curr_state->state = UNKNOWN_SECTION;
 		break;
-	    } else if ( !strcmp(line, "ENDBLK")) {
-		curr_block = NULL;
+	    } else if (!strcmp(line, "ENDBLK")) {
+		indx = -1;
 		break;
 	    } else if (!strncmp(line, "BLOCK", 5)) {
 		/* start of a new block */
 
 		//curr_block = (block_list* ) malloc(sizeof(*curr_block));
 		block tmp(ftell(dxf));
-		curr_block = &tmp;
-		block_list.push_front(*curr_block);
+		block_list.push_back(tmp);
+		indx = block_list.size()-1;
 		//block_list.push_front(block(ftell(dxf)));
-		// BU_LIST_INSERT(&(block_head), &(curr_block->l)); //Insert "new" item in front of "old" item.  block_head is the head of the list.
+		// BU_LIST_INSERT(&(block_head), &(curr_block.l)); //Insert "new" item in front of "old" item.  block_head is the head of the list.
 		break;
 	    }
 	    break;
 	case 2:		/* block name */
-	    if (curr_block && curr_block->block_name == NULL) {
-		curr_block->block_name = strdup(line);
-		if (verbose) {
-		    fprintf(out_test, "BLOCK %s begins at %jd\n",
-			   curr_block->block_name,
-			   (intmax_t)curr_block->offset);
+	    if (indx != -1) {
+			if(block_list.at(indx).block_name.empty())
+				block_list.at(indx).block_name = std::string(strdup(line));
+			if (verbose) {
+				fprintf(out_test, "BLOCK %s begins at %jd\n",
+				block_list.at(indx).block_name.c_str(),
+				(intmax_t)block_list.at(indx).offset);
 		}
 	    }
 	    break;
 	case 5:		/* block handle */
-	    if (curr_block && strcmp("" ,curr_block->handle)) {
-		len = strlen(line);
-		V_MIN(len, 16);
-		strlcpy(curr_block->handle, line, len);
-	    }
+	    if (indx != -1) 
+			if(strcmp("" ,block_list.at(indx).handle)) {
+				len = strlen(line);
+				V_MIN(len, 16);
+				strlcpy(block_list.at(indx).handle, line, len);
+			}
 	    break;
 	case 10:
 	case 20:
 	case 30:
-	    if (curr_block) {
+	    if (indx != -1) {
 		coord = code / 10 - 1;
-		curr_block->base[coord] = atof(line) * units_conv[units] * scale_factor;
+		block_list.at(indx).base[coord] = atof(line) * units_conv[units] * scale_factor;
 	    }
 	    break;
     }
@@ -1643,11 +1678,16 @@ process_entities_unknown_code(int code)
 		    fprintf(out_test, "sub_state changed to %d\n", curr_state->sub_state);
 		}
 		break;
-	    } else if (!strncmp(line, "ENDBLK", 6)) {
+	    } else if (!strcmp(line, "ENDBLK")) {
 		/* found end of an inserted block, pop the state stack */
 		tmp_state = curr_state;
 		//BU_LIST_POP(state_data, &state_stack, curr_state);
-		state_stack.pop_back();
+		if(curr_state)
+			state_stack.pop_back();
+		else{
+			state_stack.push_back(*curr_state);
+		}
+		fprintf(stdout, "size of the state stack after pop is %d\n", state_stack.size());
 		if (!curr_state) {
 		    fprintf(out_test, "ERROR: end of block encountered while not inserting!!!\n");
 		    curr_state = tmp_state;
@@ -1686,18 +1726,17 @@ process_insert_entities_code(int code)
 {
     static struct insert_data ins;
     static struct state_data *new_state=NULL;
-    struct block *blk;
+	struct block *blk;
     int coord;
 
     if (!new_state) {
-	insert_init(&ins);
-	new_state = (state_data *)malloc(sizeof(*new_state));
-	*new_state = *curr_state;
-	if (verbose) {
-	    fprintf(out_test, "Created a new state for INSERT\n");
-	}
+		insert_init(&ins);
+		new_state = (state_data *)malloc(sizeof(state_data()));
+		*new_state = *curr_state;
+		if (verbose) {
+			fprintf(out_test, "Created a new state for INSERT\n");
+		}
     }
-
     switch (code) {
 	case 8:		/* layer name */
 	    if (curr_layer_name) {
@@ -1705,21 +1744,23 @@ process_insert_entities_code(int code)
 	    }
 	    curr_layer_name = make_brlcad_name(line);
 	    break;
-	case 2:		/* block name */ //BU_LIST_FOR(blk, block_list, &block_head
-	    for (auto it : block_list) {
-			if (!strcmp(it.block_name, line)) {
+	case 2:
+	    for (int i = 0; i < block_list.size(); i++) {
+			if (strcmp(block_list.at(i).block_name.c_str(), line)) {
+				blk = &block_list.at(i);
+				new_state->curr_block_indx = i;
 				break;
 			}
 	    }
 		//BU_LIST_IS_HEAD(blk, &block_head)
-	    if (block_list_is_head(*blk, block_list)){
-		fprintf(out_test, "ERROR: INSERT references non-existent block (%s)\n", line);
-		fprintf(out_test, "\tignoring missing block\n");
-		blk = NULL;
+	    if (!blk){
+			fprintf(out_test, "ERROR: INSERT references non-existent block (%s)\n", line);
+			fprintf(out_test, "\tignoring missing block\n");
+			blk = NULL;
 	    }
-	    new_state->curr_block = blk;
+	    //new_state->curr_block = blk;
 	    if (verbose && blk) {
-		fprintf(out_test, "Inserting block %s\n", blk->block_name);
+		fprintf(out_test, "Inserting block %s\n", blk->block_name.c_str());
 	    }
 	    break;
 	case 10:
@@ -1756,7 +1797,6 @@ process_insert_entities_code(int code)
 	    ins.extrude_dir[coord] = atof(line);
 	    break;
 	case 0:		/* end of this insert */
-	
 	insert_struct ins_struct;
 	VMOVE(ins_struct.scale, ins.scale);
 	VMOVE(ins_struct.insert_pt, ins.insert_pt);
@@ -1767,7 +1807,7 @@ process_insert_entities_code(int code)
 	ins_struct.layer_name = std::string(curr_layer_name);
 	insert_vector.emplace_back(ins_struct);
 
-	if (new_state->curr_block) {
+	if (!block_list.at(new_state->curr_block_indx).empty()) {
 		double xlate[16], scale[16], rot[16], tmp1[16], tmp2[16];
 		MAT_IDN(xlate);
 		MAT_IDN(scale);
@@ -1777,16 +1817,18 @@ process_insert_entities_code(int code)
 		bn_mat_mul(tmp1, rot, scale);
 		bn_mat_mul(tmp2, xlate, tmp1);
 		bn_mat_mul(new_state->xform, tmp2, curr_state->xform);
+		fprintf(stdout, "size of the state stack before push is %d\n", state_stack.size());
 		state_stack.emplace_back(*curr_state);
+		fprintf(stdout, "size of the state stack after push is %d\n", state_stack.size());
 		//BU_LIST_PUSH(&state_stack, &(curr_state->l));
 		curr_state = new_state;
 		new_state = NULL;
-		fseek(dxf, curr_state->curr_block->offset, SEEK_SET);
+		fseek(dxf, block_list.at(curr_state->curr_block_indx).offset, SEEK_SET);
 		curr_state->state = ENTITIES_SECTION;
 		curr_state->sub_state = UNKNOWN_ENTITY_STATE;
 		if (verbose) {
 		    fprintf(out_test, "Changing state for INSERT\n");
-		    fprintf(out_test, "seeked to %jd\n", (intmax_t)curr_state->curr_block->offset);
+		    fprintf(out_test, "seeked to %jd\n", (intmax_t)block_list.at(curr_state->curr_block_indx).offset);
 		    //bn_mat_print("state xform", curr_state->xform);
 		}
 	    }
@@ -3121,24 +3163,25 @@ process_dimension_entities_code(int code)
 		ds.layer_name = std::string(curr_layer_name);
 		dimension_vector.emplace_back(ds);
 
-		new_state = (state_data *)malloc(sizeof(*new_state)); // bu_alloc
+		new_state = (state_data *)malloc(sizeof(state_data())); // bu_alloc
 		*new_state = *curr_state;
 		if (verbose) {
 		    fprintf(out_test, "Created a new state for DIMENSION\n");
 		}
-		for (auto blk : block_list) {//BU_LIST_FOR(blk, block_list, &block_head)
-		    if (block_name) {
-				if (!strcmp(blk.block_name, block_name)) {
-					break;
-				}
-		    }
-		}
-		if (block_list_is_head(*blk, block_list)) {
+		//BU_LIST_FOR(blk, block_list, &block_head)
+		for (int i = 0; i < block_list.size(); i++) {
+			if (strcmp(block_list.at(i).block_name.c_str(), line)) {
+				blk = &block_list.at(i);
+				new_state->curr_block_indx = i;
+				break;
+			}
+	    }
+		if (!blk) {
 		    fprintf(out_test, "ERROR: DIMENSION references non-existent block (%s)\n", block_name);
 		    fprintf(out_test, "\tignoring missing block\n");
 		    blk = NULL;
 		}
-		new_state->curr_block = blk;
+		//new_state->curr_block = &(*blk);
 		if (verbose && blk) {
 		    fprintf(out_test, "Inserting block %s\n", blk->block_name);
 		}
@@ -3147,17 +3190,17 @@ process_dimension_entities_code(int code)
 		    free(block_name);// "block_name");
 		}
 
-		if (new_state->curr_block) {
+		if (!block_list.at(new_state->curr_block_indx).empty()) {
 		    //BU_LIST_PUSH(&state_stack, &(curr_state->l)); place the item at the tail of the list
 			state_stack.emplace_back(*curr_state);
 		    curr_state = new_state;
 		    new_state = NULL;
-		    fseek(dxf, curr_state->curr_block->offset, SEEK_SET);
+		    fseek(dxf,  block_list.at(curr_state->curr_block_indx).offset, SEEK_SET);
 		    curr_state->state = ENTITIES_SECTION;
 		    curr_state->sub_state = UNKNOWN_ENTITY_STATE;
 		    if (verbose) {
 			fprintf(out_test, "Changing state for INSERT\n");
-			fprintf(out_test, "seeked to %jd\n", (intmax_t)curr_state->curr_block->offset);
+			fprintf(out_test, "seeked to %jd\n", (intmax_t) block_list.at(curr_state->curr_block_indx).offset);
 		    }
 		    layers[curr_layer]->dimension_count++;
 		}
@@ -3876,7 +3919,7 @@ main(int argc, char *argv[])
 
     // dxf_file = argv[bu_optind++];
     // output_file = argv[bu_optind];
-	dxf_file = (char*)"./circle-double.dxf";
+	dxf_file = (char*)"./transform-insert.dxf";
     if ((dxf=fopen(dxf_file, "rb")) == NULL) {
 	perror(dxf_file);
 	//bu_exit(1, "Cannot open DXF file (%s)\n", dxf_file);
@@ -3985,7 +4028,7 @@ main(int argc, char *argv[])
 
     while ((code=readcodes()) > -900) {
 	process_code[curr_state->state](code);
-	fprintf(stdout, "current state(%d)\n", curr_state->state);
+	fprintf(stdout, "current state(%d), code %d \n", curr_state->state, code);
     }
 
     //BU_LIST_INIT(&head_all);
