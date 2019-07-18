@@ -451,29 +451,42 @@ struct block {
 		VMOVE(base, blk.base);
 		offset = blk.offset;
 	}
-	block(): block_name(std::string()), offset(off_t()), handle{}, base{} {}
-	block(off_t file_offset): block_name(""), handle{}, base{} {
+	block(): block_name(std::string()), offset(off_t()){
+		for(int i = 0; i < 3; i ++){
+			base[i] = -1;
+		}
+		for(int i = 0; i < 17; i++){
+			handle[i] = 0;
+		}
+	}
+	block(off_t file_offset): block_name(std::string()){
 		offset = file_offset;
-}
+		for(int i = 0; i < 3; i ++){
+			base[i] = -1;
+		}
+		for(int i = 0; i < 17; i++){
+			handle[i] = 0;
+		}
+	}
 
-	int empty(){
-		if(this->block_name != ""){
-			if(this->offset != off_t()){
+	bool empty(){
+		if(this->block_name.empty()){
+			if(this->offset == off_t()){
 				for(int i = 0; i < 3; i ++){
-					if(base[i] == NULL){
-						return 0;
+					if(base[i] != -1){
+						return false;
 					}
 				}
 				for(int i = 0; i < 17; i++){
-					if(handle[i] == NULL){
-						return 0;
+					if(handle[i] != 0){
+						return false;
 					}
 				}
-				return 1;
+				return true;
 			}
-			return 0;
+			return false;
 		}
-		return 0;
+		return false;
 	}
 };
 
@@ -490,6 +503,7 @@ struct state_data {
 
 static std::vector<state_data> state_stack;
 static struct state_data *curr_state;
+static off_t block_file_offset;
 static int curr_color=7;
 static int ignore_colors = 0;
 static char *curr_layer_name;
@@ -1168,13 +1182,16 @@ process_blocks_code(int code)
 		break;
 	    } else if (!strcmp(line, "ENDBLK")) {
 		indx = -1;
+		delete curr_block;
+		curr_block = nullptr;
 		break;
 	    } else if (!strncmp(line, "BLOCK", 5)) {
 		/* start of a new block */
 
 		//curr_block = (block_list* ) malloc(sizeof(*curr_block));
+		//curr_block = new block(ftell(dxf));
 		block tmp(ftell(dxf));
-		block_list.push_back(tmp);
+		block_list.emplace_back(tmp);
 		indx = block_list.size()-1;
 		//block_list.push_front(block(ftell(dxf)));
 		// BU_LIST_INSERT(&(block_head), &(curr_block.l)); //Insert "new" item in front of "old" item.  block_head is the head of the list.
@@ -1194,7 +1211,7 @@ process_blocks_code(int code)
 	    break;
 	case 5:		/* block handle */
 	    if (indx != -1) 
-			if(strcmp("" ,block_list.at(indx).handle)) {
+			if(!strcmp("" ,block_list.at(indx).handle)) {
 				len = strlen(line);
 				V_MIN(len, 16);
 				strlcpy(block_list.at(indx).handle, line, len);
@@ -1554,8 +1571,6 @@ process_entities_polyline_code(int code)
 static int
 process_entities_unknown_code(int code)
 {
-    struct state_data *tmp_state;
-
     invisible = 0;
 
     switch (code) {
@@ -1679,21 +1694,16 @@ process_entities_unknown_code(int code)
 		}
 		break;
 	    } else if (!strcmp(line, "ENDBLK")) {
+			fprintf(stdout, "the line is: %s\n", line);
 		/* found end of an inserted block, pop the state stack */
-		tmp_state = curr_state;
 		//BU_LIST_POP(state_data, &state_stack, curr_state);
-		if(curr_state)
-			state_stack.pop_back();
-		else{
-			state_stack.push_back(*curr_state);
-		}
+		state_stack.pop_back();
 		fprintf(stdout, "size of the state stack after pop is %d\n", state_stack.size());
 		if (!curr_state) {
 		    fprintf(out_test, "ERROR: end of block encountered while not inserting!!!\n");
-		    curr_state = tmp_state;
 		    break;
 		}
-		free(tmp_state);
+		fprintf(stdout, "size of the line vector %d \n", line_vector.size());
 		fseek(dxf, curr_state->file_offset, SEEK_SET);
 		curr_state->sub_state = UNKNOWN_ENTITY_STATE;
 		if (verbose) {
@@ -1731,7 +1741,7 @@ process_insert_entities_code(int code)
 
     if (!new_state) {
 		insert_init(&ins);
-		new_state = (state_data *)malloc(sizeof(state_data()));
+		new_state = new state_data();
 		*new_state = *curr_state;
 		if (verbose) {
 			fprintf(out_test, "Created a new state for INSERT\n");
@@ -1746,10 +1756,13 @@ process_insert_entities_code(int code)
 	    break;
 	case 2:
 	    for (int i = 0; i < block_list.size(); i++) {
-			if (strcmp(block_list.at(i).block_name.c_str(), line)) {
+			if (!strcmp(block_list.at(i).block_name.c_str(), line)) {
 				blk = &block_list.at(i);
 				new_state->curr_block_indx = i;
 				break;
+			}
+			else{
+				blk = nullptr;
 			}
 	    }
 		//BU_LIST_IS_HEAD(blk, &block_head)
@@ -1760,7 +1773,7 @@ process_insert_entities_code(int code)
 	    }
 	    //new_state->curr_block = blk;
 	    if (verbose && blk) {
-		fprintf(out_test, "Inserting block %s\n", blk->block_name.c_str());
+		fprintf(stdout, "Inserting block %s\n", blk->block_name.c_str());
 	    }
 	    break;
 	case 10:
@@ -1807,32 +1820,34 @@ process_insert_entities_code(int code)
 	ins_struct.layer_name = std::string(curr_layer_name);
 	insert_vector.emplace_back(ins_struct);
 
-	if (!block_list.at(new_state->curr_block_indx).empty()) {
-		double xlate[16], scale[16], rot[16], tmp1[16], tmp2[16];
-		MAT_IDN(xlate);
-		MAT_IDN(scale);
-		MAT_SCALE_VEC(scale, ins.scale);
-		MAT_DELTAS_VEC(xlate, ins.insert_pt);
-		bn_mat_angles(rot, 0.0, 0.0, ins.rotation);
-		bn_mat_mul(tmp1, rot, scale);
-		bn_mat_mul(tmp2, xlate, tmp1);
-		bn_mat_mul(new_state->xform, tmp2, curr_state->xform);
-		fprintf(stdout, "size of the state stack before push is %d\n", state_stack.size());
-		state_stack.emplace_back(*curr_state);
-		fprintf(stdout, "size of the state stack after push is %d\n", state_stack.size());
-		//BU_LIST_PUSH(&state_stack, &(curr_state->l));
-		curr_state = new_state;
-		new_state = NULL;
-		fseek(dxf, block_list.at(curr_state->curr_block_indx).offset, SEEK_SET);
-		curr_state->state = ENTITIES_SECTION;
-		curr_state->sub_state = UNKNOWN_ENTITY_STATE;
-		if (verbose) {
-		    fprintf(out_test, "Changing state for INSERT\n");
-		    fprintf(out_test, "seeked to %jd\n", (intmax_t)block_list.at(curr_state->curr_block_indx).offset);
-		    //bn_mat_print("state xform", curr_state->xform);
+		if (!block_list.at(new_state->curr_block_indx).empty()) {
+			double xlate[16], scale[16], rot[16], tmp1[16], tmp2[16];
+			MAT_IDN(xlate);
+			MAT_IDN(scale);
+			MAT_SCALE_VEC(scale, ins.scale);
+			MAT_DELTAS_VEC(xlate, ins.insert_pt);
+			bn_mat_angles(rot, 0.0, 0.0, ins.rotation);
+			bn_mat_mul(tmp1, rot, scale);
+			bn_mat_mul(tmp2, xlate, tmp1);
+			bn_mat_mul(new_state->xform, tmp2, curr_state->xform);
+			state_stack.emplace_back(*curr_state);
+			fprintf(stdout, "size of the state stack after push is %d\n", state_stack.size());
+			//BU_LIST_PUSH(&state_stack, &(curr_state->l));
+			
+			curr_state = new_state;
+			block_file_offset = curr_state->file_offset;
+			fseek(dxf, block_list.at(curr_state->curr_block_indx).offset, SEEK_SET);
+			curr_state->state = ENTITIES_SECTION;
+			curr_state->sub_state = UNKNOWN_ENTITY_STATE;
+			delete new_state;
+			new_state = NULL;
+			if (verbose) {
+				fprintf(stdout, "Changing state for INSERT\n");
+				fprintf(stdout, "seeked to %jd\n", (intmax_t)block_list.at(curr_state->curr_block_indx).offset);
+				//bn_mat_print("state xform", curr_state->xform);
+			}
 		}
-	    }
-	    break;
+	    // break;
     }
 
     return 0;
@@ -3163,7 +3178,7 @@ process_dimension_entities_code(int code)
 		ds.layer_name = std::string(curr_layer_name);
 		dimension_vector.emplace_back(ds);
 
-		new_state = (state_data *)malloc(sizeof(state_data())); // bu_alloc
+		new_state = new state_data(); // bu_alloc
 		*new_state = *curr_state;
 		if (verbose) {
 		    fprintf(out_test, "Created a new state for DIMENSION\n");
@@ -3183,18 +3198,19 @@ process_dimension_entities_code(int code)
 		}
 		//new_state->curr_block = &(*blk);
 		if (verbose && blk) {
-		    fprintf(out_test, "Inserting block %s\n", blk->block_name);
+		    fprintf(out_test, "Inserting block %s\n", blk->block_name.c_str());
 		}
 
 		if (block_name) {
-		    free(block_name);// "block_name");
+		    delete block_name;// "block_name");
 		}
 
 		if (!block_list.at(new_state->curr_block_indx).empty()) {
 		    //BU_LIST_PUSH(&state_stack, &(curr_state->l)); place the item at the tail of the list
 			state_stack.emplace_back(*curr_state);
 		    curr_state = new_state;
-		    new_state = NULL;
+		    delete new_state;
+			new_state = NULL;
 		    fseek(dxf,  block_list.at(curr_state->curr_block_indx).offset, SEEK_SET);
 		    curr_state->state = ENTITIES_SECTION;
 		    curr_state->sub_state = UNKNOWN_ENTITY_STATE;
@@ -4003,7 +4019,8 @@ main(int argc, char *argv[])
 
     /* create initial state */
     //BU_ALLOC(curr_state, struct state_data);
-	curr_state = (struct state_data *) malloc(sizeof(*curr_state));
+	// curr_state = (struct state_data *) malloc(sizeof(*curr_state));
+	curr_state = new state_data();
     curr_state->file_offset = 0;
     curr_state->state = UNKNOWN_SECTION;
     curr_state->sub_state = UNKNOWN_ENTITY_STATE;
@@ -4030,7 +4047,8 @@ main(int argc, char *argv[])
 	process_code[curr_state->state](code);
 	fprintf(stdout, "current state(%d), code %d \n", curr_state->state, code);
     }
-
+	fprintf(stdout, "size of the line vector %d \n", line_vector.size());
+	fprintf(stdout, "size of the insert vector %d \n", insert_vector.size());
     //BU_LIST_INIT(&head_all);
 
     for (i = 0; i < next_layer; i++) {
@@ -4183,7 +4201,10 @@ main(int argc, char *argv[])
 			fprintf(out_data, "polyline_vert_indices points (%d) : (%d, %d, %d) \n", i, polyline_vert_indices[X], polyline_vert_indices[Y], polyline_vert_indices[Z]);
 		}
 	}
-	
+	if(!line_vector.empty()){
+		for(auto it: line_vector)
+			fprintf(out_data, "the line vector points are (%f, %f), (%f, %f)\n", it.line_pt[0][0], it.line_pt[0][1],it.line_pt[1][0], it.line_pt[1][1]);
+	}
 	//fprintf(stdout, "layer: %d" ,layers[curr_layer]->vert_tree->the_tree->vnode.coord);
     return 0;
 }
