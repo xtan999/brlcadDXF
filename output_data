@@ -49,6 +49,7 @@ the line vector points are (-3.000000, 10.000000), (3.000000, 10.000000)
 the line vector points are (3.000000, 10.000000), (3.000000, 8.000000)
 the line vector points are (3.000000, 8.000000), (1.000000, 8.000000)
 the line vector points are (1.000000, 8.000000), (1.000000, 6.000000)
+<<<<<<< HEAD
 the line vector points are (-1.000000, 6.000000), (-1.000000, 8.000000)
 the line vector points are (-1.000000, 8.000000), (-3.000000, 8.000000)
 the line vector points are (-3.000000, 8.000000), (-3.000000, 10.000000)
@@ -90,3 +91,5 @@ the line vector points are (-3.000000, 10.000000), (3.000000, 10.000000)
 the line vector points are (3.000000, 10.000000), (3.000000, 8.000000)
 the line vector points are (3.000000, 8.000000), (1.000000, 8.000000)
 the line vector points are (1.000000, 8.000000), (1.000000, 6.000000)
+=======
+>>>>>>> 293b1567188193cdb5e7dd0c0fafdba1342bb50b

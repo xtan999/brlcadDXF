@@ -504,6 +504,7 @@ struct state_data {
 
 static std::vector<state_data> state_stack;
 static struct state_data *curr_state;
+static off_t block_file_offset;
 static int curr_color=7;
 static int ignore_colors = 0;
 static char *curr_layer_name;
